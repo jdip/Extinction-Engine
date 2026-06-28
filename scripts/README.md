@@ -30,10 +30,10 @@ From a clean feature branch:
 ./scripts/Prepare-PrToTest.ps1
 ```
 
-This runs local validation, writes a proof under
-`docs/proofs/pr-to-test/test/`, and writes local command evidence under
-`artifacts/validation/`. Commit the proof files with the feature work, then
-open a PR to `test`.
+This runs local validation, writes and verifies a proof under
+`docs/proofs/pr-to-test/test/`, commits the proof when needed, pushes the
+branch, and creates or updates the PR to `test`. Local command evidence is
+written under `artifacts/validation/`.
 
 ## Promote To Main
 

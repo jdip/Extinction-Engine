@@ -41,6 +41,10 @@ Implemented docs under `docs/workflows/`, `docs/proofs/`, and
 Implemented a minimal proof-verification workflow at
 `.github/workflows/proof-verification.yml`.
 
+Updated `Prepare-PrToTest.ps1` so the script owns the full PR-to-test path:
+validate, create or reuse proof, commit proof artifacts, push the branch, and
+create or update the GitHub PR.
+
 ## Test
 
 Validation should cover:
@@ -51,6 +55,8 @@ Validation should cover:
 - Rust checks are skipped until `server-rust/Cargo.toml` exists
 - PR-to-test proof can be generated after the scaffolding commit
 - proof verifier accepts the generated proof
+- PR-to-test script can be re-run and complete the PR flow without manual
+  proof commits or manual PR creation
 
 ## Validate
 

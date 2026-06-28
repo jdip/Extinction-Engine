@@ -82,6 +82,15 @@ function Assert-CleanWorkingTree {
     }
 }
 
+function Get-WorkingTreeStatus {
+    $status = @(& git status --porcelain=v1 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        throw "git status failed. $(($status | Out-String).Trim())"
+    }
+
+    return $status
+}
+
 function Assert-FeatureBranch {
     param(
         [switch] $RequireCodexPrefix,
@@ -118,6 +127,74 @@ function Get-ProofSafeName {
     }
 
     return $safe
+}
+
+function Get-GitHubCliPath {
+    $command = Get-Command gh -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        return $command.Source
+    }
+
+    $programFiles = [Environment]::GetFolderPath("ProgramFiles")
+    $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($programFiles)) {
+        $candidates += (Join-Path $programFiles "GitHub CLI/gh.exe")
+    }
+    if (-not [string]::IsNullOrWhiteSpace($localAppData)) {
+        $candidates += (Join-Path $localAppData "GitHub CLI/gh.exe")
+    }
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
+
+    throw "GitHub CLI was not found on PATH or in the standard install locations. Install gh or add it to PATH."
+}
+
+function Get-OriginRepositoryFullName {
+    $remoteUrl = Get-GitText @("remote", "get-url", "origin")
+    if ($remoteUrl -match "github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+)(?:\.git)?$") {
+        return "$($matches.owner)/$($matches.repo)"
+    }
+
+    throw "Could not infer GitHub repository owner/name from origin URL: $remoteUrl"
+}
+
+function Invoke-GitHubCli {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    $gh = Get-GitHubCliPath
+    $output = & $gh @Arguments 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $message = ($output | Out-String).Trim()
+        throw "gh $($Arguments -join ' ') failed. $message"
+    }
+
+    return ($output | Out-String).Trim()
+}
+
+function Assert-GitHubCliAuthenticated {
+    $null = Invoke-GitHubCli @("auth", "status")
+}
+
+function Push-CurrentBranch {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Branch
+    )
+
+    $output = & git push -u origin $Branch 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "git push -u origin $Branch failed. $(($output | Out-String).Trim())"
+    }
+
+    return ($output | Out-String).Trim()
 }
 
 function Ensure-Directory {

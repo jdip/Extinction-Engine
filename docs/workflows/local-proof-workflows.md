@@ -48,11 +48,9 @@ From a clean feature branch:
 ./scripts/Prepare-PrToTest.ps1
 ```
 
-Then:
-
-1. Review `docs/proofs/pr-to-test/test/`.
-2. Commit the proof files.
-3. Open a PR from the feature branch to `test`.
+This command runs local validation, creates or reuses a matching proof, commits
+generated proof files when needed, pushes the feature branch, and creates or
+updates the PR to `test`.
 
 The GitHub gate only runs:
 
