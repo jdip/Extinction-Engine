@@ -1,0 +1,131 @@
+{
+    "schema_version":  1,
+    "proof_id":  "pr-to-test-test-codex-retrospective-pr-lifecycle-f01c42f8b9ae",
+    "proof_kind":  "pr-to-test",
+    "target_branch":  "test",
+    "source_branch":  "codex/retrospective-pr-lifecycle",
+    "created_utc":  "2026-06-28T20:30:57.0761713Z",
+    "subject":  {
+                    "git_head":  "f01c42f8b9ae66af7de14fbaa68d65d77e482ad8",
+                    "git_tree":  "cf6d3893847032cd9a3408f7ec9b0914a1c1ad2e",
+                    "content_digest_algorithm":  "sha256:git-index-manifest-v1",
+                    "content_digest":  "3b05537e6c47eb25f33f0f5ade5d9624c227fb0e44ee8a30026914c3d80b3994",
+                    "tracked_file_count":  40,
+                    "excluded_prefixes":  [
+                                              "docs/proofs/"
+                                          ]
+                },
+    "validation":  {
+                       "schema_version":  1,
+                       "result":  "passed",
+                       "validation_profile":  "full",
+                       "full_validation_skip_reason":  "",
+                       "started_utc":  "2026-06-28T20:30:56.6895832Z",
+                       "completed_utc":  "2026-06-28T20:30:57.0546414Z",
+                       "environment":  {
+                                           "repository_root":  ".",
+                                           "repository_root_kind":  "current-checkout",
+                                           "shell":  "powershell",
+                                           "powershell_version":  "5.1.26100.8655",
+                                           "os":  "Microsoft Windows 10.0.26200 "
+                                       },
+                       "steps":  [
+                                     {
+                                         "name":  "git diff whitespace check",
+                                         "command":  "git diff --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T20:30:56.6930918Z",
+                                         "completed_utc":  "2026-06-28T20:30:56.7381955Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "git staged diff whitespace check",
+                                         "command":  "git diff --cached --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T20:30:56.7397049Z",
+                                         "completed_utc":  "2026-06-28T20:30:56.7807617Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "remediation record validation",
+                                         "command":  "./scripts/Verify-RemediationRecords.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T20:30:56.7807617Z",
+                                         "completed_utc":  "2026-06-28T20:30:56.8573672Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "durable spec validation",
+                                         "command":  "./scripts/Verify-Specs.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T20:30:56.8578675Z",
+                                         "completed_utc":  "2026-06-28T20:30:56.9530120Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "retrospective validation",
+                                         "command":  "./scripts/Verify-Retrospectives.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T20:30:56.9540120Z",
+                                         "completed_utc":  "2026-06-28T20:30:57.0506384Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust format check",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T20:30:57.0516410Z",
+                                         "completed_utc":  "2026-06-28T20:30:57.0516410Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust clippy",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T20:30:57.0516410Z",
+                                         "completed_utc":  "2026-06-28T20:30:57.0516410Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust tests",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T20:30:57.0521407Z",
+                                         "completed_utc":  "2026-06-28T20:30:57.0521407Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     }
+                                 ]
+                   }
+}
