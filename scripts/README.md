@@ -77,3 +77,21 @@ Validate all records:
 ```powershell
 ./scripts/Verify-RemediationRecords.ps1
 ```
+
+## Specs
+
+Every non-trivial change needs a durable five-part spec in `docs/specs/`:
+
+```text
+Research
+Plan
+Implement
+Test
+Validate
+```
+
+Create new specs from `docs/specs/TEMPLATE.md`. Validate specs with:
+
+```powershell
+./scripts/Verify-Specs.ps1
+```

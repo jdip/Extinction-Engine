@@ -28,13 +28,17 @@ Before editing files:
 - For non-trivial work, create or update a short implementation spec before
   coding. Keep it near the work, usually under `docs/specs/`.
 
-For non-trivial specs, include:
+Every non-trivial spec must use the five required top-level lifecycle sections:
 
 - Research: current behavior, constraints, files, risks, unknowns.
 - Plan: ordered steps, boundaries, rollback notes, test strategy.
 - Implement: changes made and deviations from the plan.
 - Test: new/updated tests and relevant existing tests.
 - Validate: commands run, environment, results, skipped checks, residual risks.
+
+Use `docs/specs/TEMPLATE.md` for new specs. Local validation must include
+`./scripts/Verify-Specs.ps1`, and PR-to-test work is not ready until the
+durable spec validates.
 
 ## Product And Architecture Guardrails
 
@@ -275,6 +279,9 @@ content digest for the PR head, excluding proof files themselves. The digest
 is based on the Git index manifest so it is stable across Windows and Linux
 line-ending checkouts.
 
+After a successful PR-to-test merge, sync and leave the local checkout on
+`test` so the next development turn starts from the integration branch.
+
 The `test` branch is the integration branch. Because Git cannot create real
 branch refs before the first commit, bootstrap it after the initial commit:
 
@@ -336,6 +343,10 @@ Each material remediation should have an owner, status, and link to the issue,
 spec, PR, or checked-in record where it will be closed. Keep open records in
 `docs/remediation/open/` and move them to `docs/remediation/done/` when
 implemented, cancelled with rationale, or transferred elsewhere.
+
+Retrospectives belong in `docs/retrospectives/` and should be committed with
+or immediately after the lifecycle event they describe. A completed PR-to-test
+workflow must leave behind both validation proof and a retrospective.
 
 ## Agent Conduct
 

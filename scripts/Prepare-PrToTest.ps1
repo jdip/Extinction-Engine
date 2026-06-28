@@ -187,6 +187,7 @@ Rust checks are skipped until `server-rust/Cargo.toml` exists.
 
         Assert-RemoteBranchContainsCommit -Branch $targetBranch -CommitSha $currentHead
         Write-Host "Merged PR #$($pr.number) into origin/$targetBranch."
+        Sync-LocalBranchToOrigin -Branch $targetBranch
     }
 }
 

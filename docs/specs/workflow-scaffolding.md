@@ -69,4 +69,12 @@ Validation should cover:
 
 ## Validate
 
-Validation evidence will be recorded in the final handoff for this task.
+- `./scripts/Invoke-LocalValidation.ps1` passed before PR #1 proof generation;
+  Rust checks were skipped because `server-rust/Cargo.toml` does not exist yet.
+- `./scripts/Prepare-PrToTest.ps1` generated the local proof, pushed the
+  feature branch, waited for GitHub proof verification, and merged PR #1 to
+  `origin/test`.
+- GitHub proof verification passed on PR #1.
+- PR #1 merged into `test` as merge commit
+  `a0629130920e16bcdf5c6a0cc2a759f15abe5995`.
+- Follow-up lifecycle gaps are tracked in `docs/remediation/open/`.

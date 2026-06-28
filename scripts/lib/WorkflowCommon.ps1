@@ -424,6 +424,18 @@ function Assert-RemoteBranchContainsCommit {
     }
 }
 
+function Sync-LocalBranchToOrigin {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Branch
+    )
+
+    Invoke-GitProcess @("fetch", "origin", $Branch) | Write-Host
+    Invoke-GitProcess @("switch", $Branch) | Write-Host
+    Invoke-GitProcess @("merge", "--ff-only", "origin/$Branch") | Write-Host
+    Write-Host "Checkout is synced on $Branch."
+}
+
 function Ensure-Directory {
     param(
         [Parameter(Mandatory = $true)]
