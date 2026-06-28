@@ -189,25 +189,36 @@ function Push-CurrentBranch {
         [string] $Branch
     )
 
-    $stderrPath = [System.IO.Path]::GetTempFileName()
-    try {
-        $output = @(& git push -u origin $Branch 2> $stderrPath)
-        $exitCode = $LASTEXITCODE
+    $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $processInfo.FileName = "git"
+    $processInfo.UseShellExecute = $false
+    $processInfo.RedirectStandardOutput = $true
+    $processInfo.RedirectStandardError = $true
+    $processInfo.ArgumentList.Add("push")
+    $processInfo.ArgumentList.Add("-u")
+    $processInfo.ArgumentList.Add("origin")
+    $processInfo.ArgumentList.Add($Branch)
+
+    $process = [System.Diagnostics.Process]::Start($processInfo)
+    $standardOutput = $process.StandardOutput.ReadToEnd()
+    $standardError = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+    $exitCode = $process.ExitCode
+    $process.Dispose()
+
+    $output = @()
+    if (-not [string]::IsNullOrWhiteSpace($standardOutput)) {
+        $output += $standardOutput.TrimEnd()
     }
-    finally {
-        $stderrOutput = @()
-        if (Test-Path -LiteralPath $stderrPath -PathType Leaf) {
-            $stderrOutput = @(Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue)
-            Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
-        }
+    if (-not [string]::IsNullOrWhiteSpace($standardError)) {
+        $output += $standardError.TrimEnd()
     }
 
     if ($exitCode -ne 0) {
-        $combinedOutput = @($output) + @($stderrOutput)
-        throw "git push -u origin $Branch failed. $(($combinedOutput | Out-String).Trim())"
+        throw "git push -u origin $Branch failed. $(($output | Out-String).Trim())"
     }
 
-    return ((@($output) + @($stderrOutput)) | Out-String).Trim()
+    return ($output | Out-String).Trim()
 }
 
 function Ensure-Directory {
