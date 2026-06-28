@@ -143,7 +143,17 @@ function ConvertTo-RepositoryRelativePath {
         [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $Path))
     }
 
-    $relative = [System.IO.Path]::GetRelativePath($repoRoot, $resolvedPath)
+    $repoRootWithSeparator = if ($repoRoot.EndsWith([System.IO.Path]::DirectorySeparatorChar) -or
+        $repoRoot.EndsWith([System.IO.Path]::AltDirectorySeparatorChar)) {
+        $repoRoot
+    }
+    else {
+        $repoRoot + [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $repoUri = [System.Uri]::new($repoRootWithSeparator)
+    $pathUri = [System.Uri]::new($resolvedPath)
+    $relative = [System.Uri]::UnescapeDataString($repoUri.MakeRelativeUri($pathUri).ToString())
     if ($relative.StartsWith("..")) {
         throw "Path is outside the repository: $Path"
     }
