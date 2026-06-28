@@ -189,8 +189,17 @@ function Push-CurrentBranch {
         [string] $Branch
     )
 
-    $output = & git push -u origin $Branch 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $oldErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = @(& git push -u origin $Branch 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $oldErrorActionPreference
+    }
+
+    if ($exitCode -ne 0) {
         throw "git push -u origin $Branch failed. $(($output | Out-String).Trim())"
     }
 
