@@ -139,6 +139,9 @@ function ConvertTo-RepositoryRelativePath {
     $resolvedPath = if (Test-Path -LiteralPath $Path) {
         (Resolve-Path -LiteralPath $Path).Path
     }
+    elseif ([System.IO.Path]::IsPathRooted($Path)) {
+        [System.IO.Path]::GetFullPath($Path)
+    }
     else {
         [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $Path))
     }

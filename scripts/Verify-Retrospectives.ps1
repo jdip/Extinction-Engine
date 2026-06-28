@@ -1,6 +1,7 @@
 param(
     [string] $RetrospectivesRoot,
-    [string] $ProofsRoot
+    [string] $ProofsRoot,
+    [switch] $RequireProofCoverage
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +22,39 @@ $requiredHeadings = @(
     "## Gaps Discovered That Deserve Remediation"
 )
 
+function Get-RetrospectiveSectionBody {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Text,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Heading
+    )
+
+    $escapedHeading = [regex]::Escape($Heading)
+    $match = [regex]::Match($Text, "(?ms)^$escapedHeading\s*(?<body>.*?)(?=^## |\z)")
+    if (-not $match.Success) {
+        return ""
+    }
+
+    return $match.Groups["body"].Value.Trim()
+}
+
+function Test-RetrospectiveSectionHasMaterial {
+    param(
+        [string] $Body
+    )
+
+    $materialLines = @($Body -split "`r?`n" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_) -and
+            $_ -notmatch "(?i)^(-\s*)?(no\b|none\b|n/a\b|no new material\b|no material\b|everything (good|fixed)\b)"
+        })
+
+    return ($materialLines.Count -gt 0)
+}
+
 $errors = New-Object System.Collections.Generic.List[string]
 $recordsByProofKey = @{}
 
@@ -30,10 +64,6 @@ if (-not (Test-Path -LiteralPath $RetrospectivesRoot -PathType Container)) {
 else {
     $files = @(Get-ChildItem -LiteralPath $RetrospectivesRoot -Filter "*.md" -File |
         Where-Object { $_.Name -ne "TEMPLATE.md" })
-
-    if ($files.Count -eq 0) {
-        $errors.Add("No retrospective records found in $RetrospectivesRoot.")
-    }
 
     foreach ($file in $files) {
         $text = Get-Content -Raw -LiteralPath $file.FullName
@@ -53,12 +83,34 @@ else {
             if (-not $fields.ContainsKey($field) -or [string]::IsNullOrWhiteSpace($fields[$field])) {
                 $errors.Add("$($file.FullName) is missing required field '$field'.")
             }
+            elseif ($fields[$field] -match "(?i)^pending\b") {
+                $errors.Add("$($file.FullName) has draft field '$field': $($fields[$field])")
+            }
         }
 
         foreach ($heading in $requiredHeadings) {
             if ($text -notmatch "(?m)^$([regex]::Escape($heading))\s*$") {
                 $errors.Add("$($file.FullName) is missing required heading '$heading'.")
             }
+        }
+
+        $hasMaterial = $false
+        foreach ($heading in $requiredHeadings) {
+            $body = Get-RetrospectiveSectionBody -Text $text -Heading $heading
+            if (Test-RetrospectiveSectionHasMaterial -Body $body) {
+                $hasMaterial = $true
+            }
+        }
+        if (-not $hasMaterial) {
+            $errors.Add("$($file.FullName) contains no material retrospective content. Do not commit durable retrospectives just to record an all-good result.")
+        }
+
+        if ($text -match "(?im)PR or event:\s*pending") {
+            $errors.Add("$($file.FullName) still contains a pending PR/event marker.")
+        }
+
+        if ($text -match "(?i)\brecorded yet\b") {
+            $errors.Add("$($file.FullName) still contains draft retrospective text.")
         }
 
         if ($fields.ContainsKey("kind") -and $fields.ContainsKey("source_branch")) {
@@ -74,7 +126,7 @@ else {
 }
 
 $prProofRoot = Join-Path $ProofsRoot "pr-to-test"
-if (Test-Path -LiteralPath $prProofRoot -PathType Container) {
+if ($RequireProofCoverage -and (Test-Path -LiteralPath $prProofRoot -PathType Container)) {
     foreach ($proofFile in @(Get-ChildItem -LiteralPath $prProofRoot -Filter "*.proof.json" -File -Recurse)) {
         try {
             $proof = Get-Content -Raw -LiteralPath $proofFile.FullName | ConvertFrom-Json

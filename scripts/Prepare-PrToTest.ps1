@@ -8,6 +8,12 @@ param(
     [string] $RiskNotes = "",
     [string] $RollbackNotes = "",
     [string] $TrustedSignersPath = "",
+    [ValidateSet("full", "docs-only")]
+    [string] $ValidationProfile = "full",
+    [string] $ValidationSkipReason = "",
+    [string] $RetrospectiveFrictionNotes = "",
+    [string] $RetrospectiveAutomationNotes = "",
+    [string] $RetrospectiveRemediationNotes = "",
     [int] $CheckTimeoutSeconds = 600,
     [int] $CheckPollSeconds = 10
 )
@@ -27,6 +33,25 @@ $safeBranch = Get-ProofSafeName $branch
 $safeTarget = Get-ProofSafeName $targetBranch
 $title = "[codex] $($branch -replace '^codex/', '' -replace '[-_]+', ' ')"
 $title = $title.Trim()
+
+function Test-MaterialRetrospectiveNote {
+    param(
+        [string] $Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $false
+    }
+
+    $materialLines = @($Value -split "`r?`n" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_) -and
+            $_ -notmatch "(?i)^(-\s*)?(no\b|none\b|n/a\b|no new material\b|no material\b|everything (good|fixed)\b)"
+        })
+
+    return ($materialLines.Count -gt 0)
+}
 
 if (($NoPush -or $NoPr) -and -not $NoMerge) {
     throw "Use -NoMerge when using -NoPush or -NoPr."
@@ -58,7 +83,13 @@ if (-not $proofValid) {
     $proofSignaturePath = "$proofPath.asc"
     $proofPrefix = "pr-to-test-$safeTarget-$safeBranch-"
 
-    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -Sign:$Sign -TrustedSignersPath $TrustedSignersPath
+    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") `
+        -Kind "pr-to-test" `
+        -TargetBranch $targetBranch `
+        -Sign:$Sign `
+        -TrustedSignersPath $TrustedSignersPath `
+        -ValidationProfile $ValidationProfile `
+        -ValidationSkipReason $ValidationSkipReason
     $keepProofPaths = @($proofPath, $proofHashPath)
     if (Test-Path -LiteralPath $proofSignaturePath -PathType Leaf) {
         $keepProofPaths += $proofSignaturePath
@@ -115,11 +146,6 @@ if (-not $NoPr) {
         throw "Could not find a valid PR-to-test proof for the current content digest."
     }
 
-    $retrospective = Get-RetrospectiveForBranch -Kind "pr-to-test" -SourceBranch $branch
-    if ($null -eq $retrospective) {
-        throw "Missing retrospective for source branch '$branch'. Create one with ./scripts/New-Retrospective.ps1 before preparing the PR."
-    }
-
     $validationSummary = Convert-ValidationStepsToMarkdown -Validation $selectedProof.Proof.validation
     $body = @"
 ## Summary
@@ -133,7 +159,7 @@ the proof matches the current PR content digest.
 ## Lifecycle Records
 
 - Spec: `$relativeSpecPath`
-- Retrospective: `$($retrospective.RelativePath)`
+- Retrospective: finalized after successful PR-to-test merge
 - Proof: `$($selectedProof.RelativePath)`
 - Proof id: `$($selectedProof.Proof.proof_id)`
 
@@ -141,6 +167,7 @@ the proof matches the current PR content digest.
 
 - `./scripts/Prepare-PrToTest.ps1` completed successfully.
 - `./scripts/Verify-Proof.ps1 -Kind pr-to-test -TargetBranch test` passed.
+- Validation profile: `$ValidationProfile`
 - Current PR head: `$currentHead`
 
 $validationSummary
@@ -210,7 +237,8 @@ $RollbackNotes
             -RepositoryFullName $repositoryFullName `
             -PullRequestNumber $pr.number `
             -TimeoutSeconds $CheckTimeoutSeconds `
-            -PollSeconds $CheckPollSeconds
+            -PollSeconds $CheckPollSeconds |
+            Out-Null
 
         Merge-GitHubPullRequest `
             -RepositoryFullName $repositoryFullName `
@@ -225,6 +253,94 @@ $RollbackNotes
         Assert-RemoteBranchContainsCommit -Branch $targetBranch -CommitSha $currentHead
         Write-Host "Merged PR #$($pr.number) into origin/$targetBranch."
         Sync-LocalBranchToOrigin -Branch $targetBranch
+
+        $mergedHead = Get-HeadCommit
+        $created = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
+        $retrospectiveHasMaterial =
+            (Test-MaterialRetrospectiveNote -Value $RetrospectiveFrictionNotes) -or
+            (Test-MaterialRetrospectiveNote -Value $RetrospectiveAutomationNotes) -or
+            (Test-MaterialRetrospectiveNote -Value $RetrospectiveRemediationNotes)
+        $frictionNotes = if ([string]::IsNullOrWhiteSpace($RetrospectiveFrictionNotes)) {
+            "- No material friction requiring AGENTS.md changes."
+        }
+        else {
+            $RetrospectiveFrictionNotes.Trim()
+        }
+        $automationNotes = if ([string]::IsNullOrWhiteSpace($RetrospectiveAutomationNotes)) {
+            "- No material workflow automation follow-up identified."
+        }
+        else {
+            $RetrospectiveAutomationNotes.Trim()
+        }
+        $remediationNotes = if ([string]::IsNullOrWhiteSpace($RetrospectiveRemediationNotes)) {
+            "No material remediation."
+        }
+        else {
+            $RetrospectiveRemediationNotes.Trim()
+        }
+
+        if ($retrospectiveHasMaterial) {
+            $retrospectivePath = Join-Path $repoRoot "docs/retrospectives/$created-pr-$($pr.number)-$safeBranch.md"
+            $retrospectiveRelativePath = ConvertTo-RepositoryRelativePath $retrospectivePath
+            $retrospectiveContent = @"
+---
+kind: pr-to-test
+source_branch: $branch
+created: $created
+outcome: PR #$($pr.number) merged to test on $created.
+validation_reviewed: local validation proof, GitHub proof check, merge result, and local test sync
+accepted_risks: $RiskNotes
+---
+
+# PR $($pr.number) $($branch -replace '^codex/', '' -replace '[-_]+', ' ') Retrospective
+
+PR: $($pr.url)
+Outcome: Merged to `test` on $created.
+Validation reviewed: local validation proof, GitHub proof check, merge result,
+and local `test` sync to `$mergedHead`.
+Accepted risks: $RiskNotes
+
+## Friction Points That Need To Be Addressed In AGENTS.md
+
+$frictionNotes
+
+## Common Workflows That Should Be Automated With Scripts
+
+$automationNotes
+
+## Gaps Discovered That Deserve Remediation
+
+$remediationNotes
+"@
+            Write-Utf8LfFile -Path $retrospectivePath -Value $retrospectiveContent
+            & (Join-Path $repoRoot "scripts/Invoke-LocalValidation.ps1") `
+                -Profile "docs-only" `
+                -SkipFullValidationReason "Post-merge retrospective documentation only; feature validation was captured by proof $($selectedProof.Proof.proof_id)."
+            if ($LASTEXITCODE -ne 0) {
+                throw "Docs-only validation failed after writing post-merge retrospective."
+            }
+
+            Invoke-GitProcess @("add", "--", $retrospectiveRelativePath) | Write-Host
+            $diffResult = Invoke-ExternalCommand -FileName "git" -Arguments @("diff", "--cached", "--quiet") -WorkingDirectory $repoRoot
+            if ($diffResult.ExitCode -ne 0) {
+                Invoke-GitProcess @("commit", "-m", "docs: add pr-to-test retrospective for PR #$($pr.number)") | Write-Host
+                Invoke-GitProcess @("push", "origin", $targetBranch) | Write-Host
+            }
+
+            Write-Host ""
+            Write-Host "Post-PR retrospective: $retrospectiveRelativePath"
+        }
+        else {
+            Write-Host ""
+            Write-Host "Post-PR retrospective: no durable record written; no material findings were supplied."
+        }
+
+        Write-Host "## Friction Points That Need To Be Addressed In AGENTS.md"
+        Write-Host $frictionNotes
+        Write-Host "## Common Workflows That Should Be Automated With Scripts"
+        Write-Host $automationNotes
+        Write-Host "## Gaps Discovered That Deserve Remediation"
+        Write-Host $remediationNotes
     }
 }
 

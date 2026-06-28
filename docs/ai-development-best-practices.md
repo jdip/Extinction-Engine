@@ -193,8 +193,9 @@ After every PR, and after failed validations, incidents, or promotions, ask:
 - Should project instructions, templates, or runbooks change?
 - Is there a material follow-up that should be tracked?
 
-Use a consistent retrospective structure so lessons are comparable over time
-and turn into concrete repository improvements. The required structure is:
+Use a consistent retrospective structure in handoffs so lessons are comparable
+over time and turn into concrete repository improvements. The required
+structure is:
 
 1. Friction points that need to be addressed in AGENTS.md.
 2. Common workflows that should be automated with scripts.
@@ -203,6 +204,11 @@ and turn into concrete repository improvements. The required structure is:
 Include a brief PR or event link, outcome, validation evidence reviewed, and
 accepted risks as context, but keep the main body focused on those three
 action-oriented sections.
+
+Create durable retrospective documents only when the reflection contains
+material friction, automation needs, or remediation gaps. If the reflection is
+effectively "everything good" or "everything fixed", report that result in the
+handoff and avoid low-signal durable files.
 
 Create remediation records only for material follow-up work. Avoid duplicate records. Every material remediation should have an owner, status, and link to the issue, spec, PR, or checked-in record where it will be closed. Keep open remediation records in a clearly named open location, and move them to a done location when implemented, cancelled with rationale, or transferred to another planning system.
 
@@ -253,5 +259,5 @@ After merge or release:
 - Local state synced.
 - Temporary resources cleaned up.
 - Branch cleanup handled or tracked.
-- Retrospective completed for every PR.
+- Retrospective reflection completed for every PR; durable retrospective record created only when there is material content to preserve.
 - Remediation items created only for material, non-duplicate follow-ups.

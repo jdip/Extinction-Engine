@@ -50,6 +50,23 @@ verification, and merges the PR into `test`. Local command evidence is written
 under `artifacts/validation/`. Use `-NoPr -NoPush -NoMerge` for local proof
 preparation without GitHub writes.
 
+Documentation-only lifecycle updates can skip the full validation suite with a
+named profile and explicit reason:
+
+```powershell
+./scripts/Prepare-PrToTest.ps1 `
+  -ValidationProfile docs-only `
+  -ValidationSkipReason "Documentation-only lifecycle evidence; no code or behavior changes." `
+  -SpecPath docs/specs/example.md `
+  -Summary "Documentation-only lifecycle update." `
+  -RiskNotes "Full validation suite intentionally skipped because only AGENTS.md/docs changed." `
+  -RollbackNotes "Revert the documentation commit."
+```
+
+The docs-only profile allows only `AGENTS.md` and `docs/` changes. Post-PR
+retrospective notes are optional; a durable retrospective file is written only
+when at least one retrospective section contains material content.
+
 ## Promote To Main
 
 From a clean `test` branch:
@@ -108,13 +125,22 @@ Validate all records:
 
 ## Retrospectives
 
-Create a retrospective:
+Create a retrospective only when there is material friction, automation, or
+remediation content to preserve:
 
 ```powershell
-./scripts/New-Retrospective.ps1 -Kind pr-to-test -SourceBranch codex/example -Title "PR X Example Retrospective"
+./scripts/New-Retrospective.ps1 `
+  -Kind pr-to-test `
+  -SourceBranch codex/example `
+  -Title "PR X Example Retrospective" `
+  -Outcome "PR #12 merged to test." `
+  -ValidationReviewed "Proof verification and merge result." `
+  -AcceptedRisks "None." `
+  -Event "https://github.com/example/repo/pull/12" `
+  -FrictionNotes "- The PR process exposed a contract gap."
 ```
 
-Validate retrospective records and their proof coverage:
+Validate retrospective record shape and materiality:
 
 ```powershell
 ./scripts/Verify-Retrospectives.ps1
