@@ -113,6 +113,14 @@ else {
             $errors.Add("$($file.FullName) still contains draft retrospective text.")
         }
 
+        if ($text -match "`t") {
+            $errors.Add("$($file.FullName) contains a tab character. Retrospective records should not contain PowerShell escape artifacts.")
+        }
+
+        if ($text -match "\`$mergedHead") {
+            $errors.Add("$($file.FullName) contains an unresolved merged-head placeholder.")
+        }
+
         if ($fields.ContainsKey("kind") -and $fields.ContainsKey("source_branch")) {
             $key = "$($fields.kind)|$($fields.source_branch)"
             if ($recordsByProofKey.ContainsKey($key)) {
