@@ -54,12 +54,15 @@ jobs:
             throw "No proof policy is configured for base branch '$env:BASE_REF'."
           }
 
-          $args = @("-Kind", $kind, "-TargetBranch", $env:BASE_REF)
+          $params = @{
+            Kind = $kind
+            TargetBranch = $env:BASE_REF
+          }
           if ($env:HEAD_SHA) {
-            $args += @("-HeadSha", $env:HEAD_SHA)
+            $params.HeadSha = $env:HEAD_SHA
           }
           if ($env:REQUIRE_PROOF_SIGNATURE -eq "true") {
-            $args += "-RequireSignature"
+            $params.RequireSignature = $true
           }
 
-          ./scripts/Verify-Proof.ps1 @args
+          ./scripts/Verify-Proof.ps1 @params

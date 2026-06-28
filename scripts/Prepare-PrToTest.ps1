@@ -2,7 +2,9 @@ param(
     [switch] $Sign,
     [switch] $NoPush,
     [switch] $NoPr,
-    [switch] $ReadyForReview
+    [switch] $NoMerge,
+    [int] $CheckTimeoutSeconds = 600,
+    [int] $CheckPollSeconds = 10
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +22,10 @@ $safeBranch = Get-ProofSafeName $branch
 $safeTarget = Get-ProofSafeName $targetBranch
 $title = "[codex] $($branch -replace '^codex/', '' -replace '[-_]+', ' ')"
 $title = $title.Trim()
+
+if (($NoPush -or $NoPr) -and -not $NoMerge) {
+    throw "Use -NoMerge when using -NoPush or -NoPr."
+}
 
 Assert-CleanWorkingTree -Reason "PR-to-test requires feature work committed before proof generation."
 
@@ -81,18 +87,10 @@ if (-not $NoPush) {
 if (-not $NoPr) {
     Assert-GitHubCliAuthenticated
 
-    $proofSummary = Invoke-GitHubCli @(
-        "pr", "list",
-        "--repo", $repositoryFullName,
-        "--head", $branch,
-        "--base", $targetBranch,
-        "--json", "number,url,state,isDraft"
-    )
-    $existingPrs = @()
-    if (-not [string]::IsNullOrWhiteSpace($proofSummary)) {
-        $existingPrs = @($proofSummary | ConvertFrom-Json)
-    }
-
+    $existingPr = Get-GitHubPullRequestForBranches `
+        -RepositoryFullName $repositoryFullName `
+        -HeadBranch $branch `
+        -BaseBranch $targetBranch
     $bodyPath = Join-Path $repoRoot "artifacts/pr-bodies/pr-to-test-$safeTarget-$safeBranch.md"
     Ensure-Directory (Split-Path -Parent $bodyPath)
     $currentHead = Get-HeadCommit
@@ -114,18 +112,20 @@ Rust checks are skipped until `server-rust/Cargo.toml` exists.
 "@
     Set-Content -LiteralPath $bodyPath -Value $body -Encoding UTF8
 
-    if ($existingPrs.Count -gt 0) {
-        $pr = $existingPrs | Select-Object -First 1
+    if ($null -ne $existingPr -and $existingPr.state -eq "MERGED") {
+        Assert-RemoteBranchContainsCommit -Branch $targetBranch -CommitSha $currentHead
+        Write-Host "PR already merged and origin/$targetBranch contains $currentHead: $($existingPr.url)"
+        return
+    }
+
+    if ($null -ne $existingPr -and $existingPr.state -ne "CLOSED") {
+        $pr = $existingPr
         Invoke-GitHubCli @(
             "pr", "edit", "$($pr.number)",
             "--repo", $repositoryFullName,
             "--title", $title,
             "--body-file", $bodyPath
         ) | Write-Host
-
-        if ($ReadyForReview -and $pr.isDraft) {
-            Invoke-GitHubCli @("pr", "ready", "$($pr.number)", "--repo", $repositoryFullName) | Write-Host
-        }
 
         Write-Host "Updated PR: $($pr.url)"
     }
@@ -139,12 +139,48 @@ Rust checks are skipped until `server-rust/Cargo.toml` exists.
             "--body-file", $bodyPath
         )
 
-        if (-not $ReadyForReview) {
-            $createArgs += "--draft"
-        }
-
         $createdUrl = Invoke-GitHubCli $createArgs
         Write-Host "Created PR: $createdUrl"
+        $pr = Get-GitHubPullRequestForBranches `
+            -RepositoryFullName $repositoryFullName `
+            -HeadBranch $branch `
+            -BaseBranch $targetBranch
+    }
+
+    if ($null -eq $pr) {
+        throw "Could not find or create PR for '$branch' -> '$targetBranch'."
+    }
+
+    Set-GitHubPullRequestReady -RepositoryFullName $repositoryFullName -PullRequestNumber $pr.number
+
+    if (-not $NoMerge) {
+        if ($NoPush -or $NoPr) {
+            throw "Cannot merge when -NoPush or -NoPr is set."
+        }
+
+        $view = Get-GitHubPullRequestView -RepositoryFullName $repositoryFullName -PullRequestNumber $pr.number
+        if ($view.headRefOid -ne $currentHead) {
+            throw "Refusing to merge PR #$($pr.number): head moved. PR head=$($view.headRefOid) local head=$currentHead"
+        }
+
+        Wait-GitHubPullRequestCheck `
+            -RepositoryFullName $repositoryFullName `
+            -PullRequestNumber $pr.number `
+            -TimeoutSeconds $CheckTimeoutSeconds `
+            -PollSeconds $CheckPollSeconds
+
+        Merge-GitHubPullRequest `
+            -RepositoryFullName $repositoryFullName `
+            -PullRequestNumber $pr.number `
+            -ExpectedHeadSha $currentHead
+
+        $mergedView = Get-GitHubPullRequestView -RepositoryFullName $repositoryFullName -PullRequestNumber $pr.number
+        if ($mergedView.state -ne "MERGED") {
+            throw "PR #$($pr.number) did not end in MERGED state. Current state: $($mergedView.state)"
+        }
+
+        Assert-RemoteBranchContainsCommit -Branch $targetBranch -CommitSha $currentHead
+        Write-Host "Merged PR #$($pr.number) into origin/$targetBranch."
     }
 }
 

@@ -256,8 +256,8 @@ Record skipped checks with reasons.
 
 Development flows through local proof, not expensive GitHub re-execution:
 
-- Feature branch -> local validation proof -> PR to `test`.
-- `test` branch -> local promotion proof -> PR to `main`.
+- Feature branch -> local validation proof -> PR to `test` -> proof gate -> merge to `test`.
+- `test` branch -> local promotion proof -> PR to `main` -> proof gate -> explicit approval -> merge to `main`.
 - GitHub Actions should only run proof verification gates.
 
 Use:
@@ -271,7 +271,9 @@ Use:
 
 Proof files under `docs/proofs/` are intended to be committed. Local command
 logs under `artifacts/` are not. A valid proof must match the current tracked
-content digest for the PR head, excluding proof files themselves.
+content digest for the PR head, excluding proof files themselves. The digest
+is based on the Git index manifest so it is stable across Windows and Linux
+line-ending checkouts.
 
 The `test` branch is the integration branch. Because Git cannot create real
 branch refs before the first commit, bootstrap it after the initial commit:

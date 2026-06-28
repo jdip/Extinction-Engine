@@ -28,13 +28,14 @@ Each proof binds to:
 - target branch: `test` or `main`
 - source branch
 - subject Git commit and tree
-- SHA-256 digest of tracked repository content, excluding `docs/proofs/`
+- SHA-256 digest of the tracked Git index manifest, excluding `docs/proofs/`
 - local validation result and command evidence summary
 
-The verifier recomputes the repository content digest for the PR head,
+The verifier recomputes the Git index manifest digest for the PR head,
 excluding `docs/proofs/`, and accepts the proof only when the digest matches.
-This lets proof files be committed after validation without invalidating the
-content that was tested.
+This keeps proof verification stable across Windows and Linux line-ending
+checkouts, and lets proof files be committed after validation without
+invalidating the content that was tested.
 
 Detached GPG signatures are optional at first. Use `-Sign` when preparing a
 proof. Once trusted public keys are documented, set
@@ -49,8 +50,9 @@ From a clean feature branch:
 ```
 
 This command runs local validation, creates or reuses a matching proof, commits
-generated proof files when needed, pushes the feature branch, and creates or
-updates the PR to `test`.
+generated proof files when needed, pushes the feature branch, creates or
+updates the PR to `test`, waits for GitHub proof verification, and merges the
+PR into `test`.
 
 The GitHub gate only runs:
 
@@ -66,11 +68,12 @@ From a clean `test` branch:
 ./scripts/Prepare-PromoteToMain.ps1
 ```
 
-Then:
+This command prepares the promotion PR but does not merge by default. To merge
+to `main`, use the explicit approval phrase:
 
-1. Review `docs/proofs/promote-to-main/main/`.
-2. Commit the proof files to `test`.
-3. Open a PR from `test` to `main`.
+```powershell
+./scripts/Prepare-PromoteToMain.ps1 -ConfirmPromotion "promote test to main"
+```
 
 The GitHub gate only runs:
 

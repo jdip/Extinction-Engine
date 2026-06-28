@@ -43,7 +43,14 @@ Implemented a minimal proof-verification workflow at
 
 Updated `Prepare-PrToTest.ps1` so the script owns the full PR-to-test path:
 validate, create or reuse proof, commit proof artifacts, push the branch, and
-create or update the GitHub PR.
+create or update the GitHub PR, wait for proof verification, and merge to
+`test`.
+
+Updated proof hashing to use the Git index manifest rather than working-tree
+bytes, so proof verification is stable across Windows and Linux checkouts.
+
+Updated `Prepare-PromoteToMain.ps1` to use the same proof and PR helpers while
+requiring the explicit phrase `promote test to main` before merging.
 
 ## Test
 
@@ -57,6 +64,8 @@ Validation should cover:
 - proof verifier accepts the generated proof
 - PR-to-test script can be re-run and complete the PR flow without manual
   proof commits or manual PR creation
+- GitHub proof verification passes for the PR head
+- PR-to-test script merges the PR into `origin/test`
 
 ## Validate
 

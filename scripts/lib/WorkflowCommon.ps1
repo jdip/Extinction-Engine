@@ -154,6 +154,59 @@ function Get-GitHubCliPath {
     throw "GitHub CLI was not found on PATH or in the standard install locations. Install gh or add it to PATH."
 }
 
+function ConvertTo-ProcessArgumentString {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    return (($Arguments | ForEach-Object {
+        if ($_ -match '[\s"]') {
+            '"' + ($_.Replace('\', '\\').Replace('"', '\"')) + '"'
+        }
+        else {
+            $_
+        }
+    }) -join " ")
+}
+
+function Invoke-ExternalCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FileName,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments,
+
+        [string] $WorkingDirectory = ""
+    )
+
+    $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $processInfo.FileName = $FileName
+    $processInfo.UseShellExecute = $false
+    $processInfo.RedirectStandardOutput = $true
+    $processInfo.RedirectStandardError = $true
+    $processInfo.Arguments = ConvertTo-ProcessArgumentString $Arguments
+    if (-not [string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+        $processInfo.WorkingDirectory = $WorkingDirectory
+    }
+
+    $process = [System.Diagnostics.Process]::Start($processInfo)
+    $standardOutput = $process.StandardOutput.ReadToEnd()
+    $standardError = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+    $exitCode = $process.ExitCode
+    $process.Dispose()
+
+    return [pscustomobject]@{
+        ExitCode = $exitCode
+        StdOut = $standardOutput.TrimEnd()
+        StdErr = $standardError.TrimEnd()
+        Output = (@($standardOutput.TrimEnd(), $standardError.TrimEnd()) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`n"
+    }
+}
+
 function Get-OriginRepositoryFullName {
     $remoteUrl = Get-GitText @("remote", "get-url", "origin")
     if ($remoteUrl -match "github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+)(?:\.git)?$") {
@@ -170,13 +223,36 @@ function Invoke-GitHubCli {
     )
 
     $gh = Get-GitHubCliPath
-    $output = & $gh @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $message = ($output | Out-String).Trim()
-        throw "gh $($Arguments -join ' ') failed. $message"
+    $result = Invoke-ExternalCommand -FileName $gh -Arguments $Arguments -WorkingDirectory (Get-RepoRoot)
+    if ($result.ExitCode -ne 0) {
+        throw "gh $($Arguments -join ' ') failed. $($result.Output)"
     }
 
-    return ($output | Out-String).Trim()
+    return $result.Output
+}
+
+function Invoke-GitHubCliRaw {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    $gh = Get-GitHubCliPath
+    return Invoke-ExternalCommand -FileName $gh -Arguments $Arguments -WorkingDirectory (Get-RepoRoot)
+}
+
+function Invoke-GitProcess {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    $result = Invoke-ExternalCommand -FileName "git" -Arguments $Arguments -WorkingDirectory (Get-RepoRoot)
+    if ($result.ExitCode -ne 0) {
+        throw "git $($Arguments -join ' ') failed. $($result.Output)"
+    }
+
+    return $result.Output
 }
 
 function Assert-GitHubCliAuthenticated {
@@ -189,33 +265,163 @@ function Push-CurrentBranch {
         [string] $Branch
     )
 
-    $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $processInfo.FileName = "git"
-    $processInfo.UseShellExecute = $false
-    $processInfo.RedirectStandardOutput = $true
-    $processInfo.RedirectStandardError = $true
-    $processInfo.Arguments = "push -u origin `"$Branch`""
+    return Invoke-GitProcess @("push", "-u", "origin", $Branch)
+}
 
-    $process = [System.Diagnostics.Process]::Start($processInfo)
-    $standardOutput = $process.StandardOutput.ReadToEnd()
-    $standardError = $process.StandardError.ReadToEnd()
-    $process.WaitForExit()
-    $exitCode = $process.ExitCode
-    $process.Dispose()
+function Get-GitHubPullRequestForBranches {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RepositoryFullName,
 
-    $output = @()
-    if (-not [string]::IsNullOrWhiteSpace($standardOutput)) {
-        $output += $standardOutput.TrimEnd()
+        [Parameter(Mandatory = $true)]
+        [string] $HeadBranch,
+
+        [Parameter(Mandatory = $true)]
+        [string] $BaseBranch
+    )
+
+    $json = Invoke-GitHubCli @(
+        "pr", "list",
+        "--repo", $RepositoryFullName,
+        "--head", $HeadBranch,
+        "--base", $BaseBranch,
+        "--state", "all",
+        "--json", "number,url,state,isDraft"
+    )
+
+    if ([string]::IsNullOrWhiteSpace($json)) {
+        return $null
     }
-    if (-not [string]::IsNullOrWhiteSpace($standardError)) {
-        $output += $standardError.TrimEnd()
+
+    $pullRequests = @($json | ConvertFrom-Json)
+    if ($pullRequests.Count -eq 0) {
+        return $null
     }
 
-    if ($exitCode -ne 0) {
-        throw "git push -u origin $Branch failed. $(($output | Out-String).Trim())"
+    return $pullRequests | Select-Object -First 1
+}
+
+function Get-GitHubPullRequestView {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RepositoryFullName,
+
+        [Parameter(Mandatory = $true)]
+        [int] $PullRequestNumber
+    )
+
+    $json = Invoke-GitHubCli @(
+        "pr", "view", "$PullRequestNumber",
+        "--repo", $RepositoryFullName,
+        "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,mergeCommit,mergeStateStatus"
+    )
+
+    return $json | ConvertFrom-Json
+}
+
+function Set-GitHubPullRequestReady {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RepositoryFullName,
+
+        [Parameter(Mandatory = $true)]
+        [int] $PullRequestNumber
+    )
+
+    $view = Get-GitHubPullRequestView -RepositoryFullName $RepositoryFullName -PullRequestNumber $PullRequestNumber
+    if ($view.isDraft) {
+        Invoke-GitHubCli @("pr", "ready", "$PullRequestNumber", "--repo", $RepositoryFullName) | Write-Host
+    }
+}
+
+function Wait-GitHubPullRequestCheck {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RepositoryFullName,
+
+        [Parameter(Mandatory = $true)]
+        [int] $PullRequestNumber,
+
+        [string] $CheckName = "Verify checked-in local proof",
+        [int] $TimeoutSeconds = 600,
+        [int] $PollSeconds = 10
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $result = Invoke-GitHubCliRaw @(
+            "pr", "checks", "$PullRequestNumber",
+            "--repo", $RepositoryFullName,
+            "--json", "name,bucket,state,link,workflow"
+        )
+
+        $json = $result.StdOut
+        if (-not [string]::IsNullOrWhiteSpace($json)) {
+            $checks = @($json | ConvertFrom-Json)
+            $matchingCheck = $checks |
+                Where-Object { $_.name -eq $CheckName } |
+                Select-Object -First 1
+
+            if ($null -ne $matchingCheck) {
+                if ($matchingCheck.bucket -eq "pass") {
+                    Write-Host "GitHub proof check passed: $CheckName"
+                    return $matchingCheck
+                }
+
+                if ($matchingCheck.bucket -in @("fail", "cancel")) {
+                    throw "GitHub proof check did not pass. bucket=$($matchingCheck.bucket) state=$($matchingCheck.state) link=$($matchingCheck.link)"
+                }
+
+                Write-Host "Waiting for GitHub proof check: bucket=$($matchingCheck.bucket) state=$($matchingCheck.state)"
+            }
+            else {
+                Write-Host "Waiting for GitHub proof check to appear: $CheckName"
+            }
+        }
+        else {
+            Write-Host "Waiting for GitHub checks to appear."
+        }
+
+        Start-Sleep -Seconds $PollSeconds
     }
 
-    return ($output | Out-String).Trim()
+    throw "Timed out after $TimeoutSeconds seconds waiting for GitHub proof check '$CheckName'."
+}
+
+function Merge-GitHubPullRequest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RepositoryFullName,
+
+        [Parameter(Mandatory = $true)]
+        [int] $PullRequestNumber,
+
+        [Parameter(Mandatory = $true)]
+        [string] $ExpectedHeadSha
+    )
+
+    Invoke-GitHubCli @(
+        "pr", "merge", "$PullRequestNumber",
+        "--repo", $RepositoryFullName,
+        "--merge",
+        "--match-head-commit", $ExpectedHeadSha
+    ) | Write-Host
+}
+
+function Assert-RemoteBranchContainsCommit {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Branch,
+
+        [Parameter(Mandatory = $true)]
+        [string] $CommitSha
+    )
+
+    Invoke-GitProcess @("fetch", "origin", $Branch) | Write-Host
+    $result = Invoke-ExternalCommand -FileName "git" -Arguments @("merge-base", "--is-ancestor", $CommitSha, "origin/$Branch") -WorkingDirectory (Get-RepoRoot)
+    if ($result.ExitCode -ne 0) {
+        throw "origin/$Branch does not contain expected commit $CommitSha."
+    }
 }
 
 function Ensure-Directory {
@@ -234,18 +440,19 @@ function Get-RepositoryContentDigest {
         [string[]] $ExcludedPrefixes = @("docs/proofs/")
     )
 
-    $repoRoot = Get-RepoRoot
-    $files = & git -C $repoRoot ls-files 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "git ls-files failed. $(($files | Out-String).Trim())"
-    }
-
+    $indexOutput = Invoke-GitProcess @("ls-files", "-s")
+    $indexEntries = @($indexOutput -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     $encoding = [System.Text.UTF8Encoding]::new($false)
     $stream = [System.IO.MemoryStream]::new()
     $trackedCount = 0
+    $manifestLines = New-Object System.Collections.Generic.List[string]
 
-    foreach ($file in ($files | Sort-Object)) {
-        $normalized = ($file.ToString() -replace "\\", "/")
+    foreach ($entry in $indexEntries) {
+        if ($entry -notmatch "^(?<mode>\d+)\s+(?<object>[0-9a-fA-F]+)\s+(?<stage>\d+)\t(?<path>.+)$") {
+            throw "Could not parse git index entry: $entry"
+        }
+
+        $normalized = ($matches.path -replace "\\", "/")
         $excluded = $false
         foreach ($prefix in $ExcludedPrefixes) {
             if ($normalized.StartsWith($prefix)) {
@@ -258,18 +465,13 @@ function Get-RepositoryContentDigest {
             continue
         }
 
-        $absolutePath = Join-Path $repoRoot $normalized
-        if (-not (Test-Path -LiteralPath $absolutePath -PathType Leaf)) {
-            continue
-        }
-
-        $bytes = [System.IO.File]::ReadAllBytes($absolutePath)
-        $header = $encoding.GetBytes("path:$normalized`nlength:$($bytes.Length)`n")
-        $stream.Write($header, 0, $header.Length)
-        $stream.Write($bytes, 0, $bytes.Length)
-        $separator = $encoding.GetBytes("`n")
-        $stream.Write($separator, 0, $separator.Length)
+        $manifestLines.Add("$($matches.mode) $($matches.object.ToLowerInvariant()) $($matches.stage) $normalized")
         $trackedCount += 1
+    }
+
+    foreach ($line in ($manifestLines | Sort-Object)) {
+        $bytes = $encoding.GetBytes("$line`n")
+        $stream.Write($bytes, 0, $bytes.Length)
     }
 
     $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -282,7 +484,7 @@ function Get-RepositoryContentDigest {
     }
 
     return [pscustomobject]@{
-        Algorithm = "sha256:repo-tracked-files-v1"
+        Algorithm = "sha256:git-index-manifest-v1"
         Digest = $digest
         TrackedFileCount = $trackedCount
         ExcludedPrefixes = $ExcludedPrefixes

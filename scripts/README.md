@@ -32,8 +32,9 @@ From a clean feature branch:
 
 This runs local validation, writes and verifies a proof under
 `docs/proofs/pr-to-test/test/`, commits the proof when needed, pushes the
-branch, and creates or updates the PR to `test`. Local command evidence is
-written under `artifacts/validation/`.
+branch, creates or updates the PR to `test`, waits for GitHub proof
+verification, and merges the PR into `test`. Local command evidence is written
+under `artifacts/validation/`.
 
 ## Promote To Main
 
@@ -44,9 +45,12 @@ From a clean `test` branch:
 ```
 
 This runs local validation, writes a promotion proof under
-`docs/proofs/promote-to-main/main/`, and lets the PR from `test` to `main`
-depend on proof verification instead of rerunning the full validation suite in
-GitHub Actions.
+`docs/proofs/promote-to-main/main/`, pushes `test`, and creates or updates the
+promotion PR to `main`. It only merges when called with:
+
+```powershell
+./scripts/Prepare-PromoteToMain.ps1 -ConfirmPromotion "promote test to main"
+```
 
 ## Signatures
 
