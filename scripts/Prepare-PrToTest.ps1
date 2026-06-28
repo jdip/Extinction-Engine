@@ -48,8 +48,12 @@ if (-not $proofValid) {
     $proofSignaturePath = "$proofPath.asc"
     $proofPrefix = "pr-to-test-$safeTarget-$safeBranch-"
 
-    Remove-StaleProofArtifacts -ProofDirectory $proofDir -ProofPrefix $proofPrefix
     & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -Sign:$Sign
+    $keepProofPaths = @($proofPath, $proofHashPath)
+    if ($Sign) {
+        $keepProofPaths += $proofSignaturePath
+    }
+    Remove-StaleProofArtifacts -ProofDirectory $proofDir -ProofPrefix $proofPrefix -KeepPaths $keepProofPaths
     & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch
 
     $pathsToStage = @($proofPath, $proofHashPath)

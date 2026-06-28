@@ -531,15 +531,24 @@ function Remove-StaleProofArtifacts {
         [string] $ProofDirectory,
 
         [Parameter(Mandatory = $true)]
-        [string] $ProofPrefix
+        [string] $ProofPrefix,
+
+        [string[]] $KeepPaths = @()
     )
 
     if (-not (Test-Path -LiteralPath $ProofDirectory -PathType Container)) {
         return
     }
 
+    $keepFullNames = @{}
+    foreach ($keepPath in $KeepPaths) {
+        if (Test-Path -LiteralPath $keepPath -PathType Leaf) {
+            $keepFullNames[(Resolve-Path -LiteralPath $keepPath).Path] = $true
+        }
+    }
+
     Get-ChildItem -LiteralPath $ProofDirectory -File |
-        Where-Object { $_.Name.StartsWith($ProofPrefix) } |
+        Where-Object { $_.Name.StartsWith($ProofPrefix) -and -not $keepFullNames.ContainsKey($_.FullName) } |
         ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 }
 
