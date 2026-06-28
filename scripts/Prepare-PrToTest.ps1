@@ -3,6 +3,11 @@ param(
     [switch] $NoPush,
     [switch] $NoPr,
     [switch] $NoMerge,
+    [string] $SpecPath = "",
+    [string] $Summary = "",
+    [string] $RiskNotes = "",
+    [string] $RollbackNotes = "",
+    [string] $TrustedSignersPath = "",
     [int] $CheckTimeoutSeconds = 600,
     [int] $CheckPollSeconds = 10
 )
@@ -28,10 +33,15 @@ if (($NoPush -or $NoPr) -and -not $NoMerge) {
 }
 
 Assert-CleanWorkingTree -Reason "PR-to-test requires feature work committed before proof generation."
+Assert-BranchContainsRemoteBranch -RemoteBranch $targetBranch
+$relativeSpecPath = ""
+if (-not $NoPr) {
+    $relativeSpecPath = Assert-PrMetadata -SpecPath $SpecPath -Summary $Summary -RiskNotes $RiskNotes -RollbackNotes $RollbackNotes
+}
 
 $proofValid = $false
 try {
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
     $proofValid = $true
     Write-Host "Existing PR-to-test proof is valid for the current content digest."
 }
@@ -48,16 +58,16 @@ if (-not $proofValid) {
     $proofSignaturePath = "$proofPath.asc"
     $proofPrefix = "pr-to-test-$safeTarget-$safeBranch-"
 
-    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -Sign:$Sign
+    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -Sign:$Sign -TrustedSignersPath $TrustedSignersPath
     $keepProofPaths = @($proofPath, $proofHashPath)
-    if ($Sign) {
+    if (Test-Path -LiteralPath $proofSignaturePath -PathType Leaf) {
         $keepProofPaths += $proofSignaturePath
     }
     Remove-StaleProofArtifacts -ProofDirectory $proofDir -ProofPrefix $proofPrefix -KeepPaths $keepProofPaths
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
 
     $pathsToStage = @($proofPath, $proofHashPath)
-    if ($Sign) {
+    if (Test-Path -LiteralPath $proofSignaturePath -PathType Leaf) {
         $pathsToStage += $proofSignaturePath
     }
 
@@ -83,7 +93,7 @@ if (-not $proofValid) {
         }
     }
 
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "pr-to-test" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
 }
 
 if (-not $NoPush) {
@@ -100,13 +110,32 @@ if (-not $NoPr) {
     $bodyPath = Join-Path $repoRoot "artifacts/pr-bodies/pr-to-test-$safeTarget-$safeBranch.md"
     Ensure-Directory (Split-Path -Parent $bodyPath)
     $currentHead = Get-HeadCommit
+    $selectedProof = Get-LatestMatchingProof -Kind "pr-to-test" -TargetBranch $targetBranch
+    if ($null -eq $selectedProof) {
+        throw "Could not find a valid PR-to-test proof for the current content digest."
+    }
+
+    $retrospective = Get-RetrospectiveForBranch -Kind "pr-to-test" -SourceBranch $branch
+    if ($null -eq $retrospective) {
+        throw "Missing retrospective for source branch '$branch'. Create one with ./scripts/New-Retrospective.ps1 before preparing the PR."
+    }
+
+    $validationSummary = Convert-ValidationStepsToMarkdown -Validation $selectedProof.Proof.validation
     $body = @"
 ## Summary
 
-Prepared by the local PR-to-test workflow script.
+$Summary
 
-This branch carries feature work plus a checked-in local validation proof.
-GitHub should only verify that the proof matches the current PR content digest.
+Prepared by the local PR-to-test workflow script. This branch carries feature
+work plus a checked-in local validation proof. GitHub should only verify that
+the proof matches the current PR content digest.
+
+## Lifecycle Records
+
+- Spec: `$relativeSpecPath`
+- Retrospective: `$($retrospective.RelativePath)`
+- Proof: `$($selectedProof.RelativePath)`
+- Proof id: `$($selectedProof.Proof.proof_id)`
 
 ## Validation
 
@@ -114,7 +143,15 @@ GitHub should only verify that the proof matches the current PR content digest.
 - `./scripts/Verify-Proof.ps1 -Kind pr-to-test -TargetBranch test` passed.
 - Current PR head: `$currentHead`
 
-Rust checks are skipped until `server-rust/Cargo.toml` exists.
+$validationSummary
+
+## Risks
+
+$RiskNotes
+
+## Rollback
+
+$RollbackNotes
 "@
     Set-Content -LiteralPath $bodyPath -Value $body -Encoding UTF8
 

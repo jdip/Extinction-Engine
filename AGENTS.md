@@ -22,6 +22,8 @@ Before editing files:
 
 - Read this file and the relevant sections of both docs.
 - Check `git status --short`.
+- Sync the latest trusted base before branching. Prefer
+  `./scripts/Start-FeatureWork.ps1 -Name <task>` for new work.
 - Work on a feature branch. Do not develop directly on `main` or `test`.
 - Identify the current task, expected done criteria, and risk areas.
 - Preserve human work. Do not overwrite, revert, or reformat unrelated changes.
@@ -268,6 +270,7 @@ Use:
 
 ```powershell
 ./scripts/Ensure-FeatureBranch.ps1
+./scripts/Start-FeatureWork.ps1 -Name <task>
 ./scripts/Prepare-PrToTest.ps1
 ./scripts/Prepare-PromoteToMain.ps1
 ./scripts/Verify-Proof.ps1 -Kind pr-to-test -TargetBranch test
@@ -279,8 +282,21 @@ content digest for the PR head, excluding proof files themselves. The digest
 is based on the Git index manifest so it is stable across Windows and Linux
 line-ending checkouts.
 
+Proof signatures use a staged rollout. Trusted proof signer fingerprints live
+under `docs/proofs/trusted-signers/`. Until a trusted signer is configured and
+GitHub proof verification requires signatures, unsigned proofs may still pass
+but required-signature verification must fail closed with a setup message.
+
 After a successful PR-to-test merge, sync and leave the local checkout on
 `test` so the next development turn starts from the integration branch.
+Handle merged branch cleanup through the project helper:
+
+```powershell
+./scripts/Clean-MergedBranches.ps1
+```
+
+The cleanup helper is dry-run-first. Do not delete local or remote branches
+without an explicit confirmation flag and the human's approval when needed.
 
 The `test` branch is the integration branch. Because Git cannot create real
 branch refs before the first commit, bootstrap it after the initial commit:
@@ -347,6 +363,8 @@ implemented, cancelled with rationale, or transferred elsewhere.
 Retrospectives belong in `docs/retrospectives/` and should be committed with
 or immediately after the lifecycle event they describe. A completed PR-to-test
 workflow must leave behind both validation proof and a retrospective.
+Use `docs/retrospectives/TEMPLATE.md` or `./scripts/New-Retrospective.ps1` for
+new retrospective records. Local validation includes retrospective validation.
 
 ## Agent Conduct
 

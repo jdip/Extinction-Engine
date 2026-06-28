@@ -1,3 +1,12 @@
+---
+kind: pr-to-test
+source_branch: codex/workflow-scaffolding
+created: 2026-06-28
+outcome: Merged to test on 2026-06-28.
+validation_reviewed: local validation proof, GitHub proof verification, and origin/test containment of the feature branch head
+accepted_risks: Rust checks were skipped because server-rust/Cargo.toml does not exist yet.
+---
+
 # PR 1 Workflow Scaffolding Retrospective
 
 PR: https://github.com/jdip/Extinction-Engine/pull/1

@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $TargetBranch,
 
-    [switch] $Sign
+    [switch] $Sign,
+    [string] $TrustedSignersPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -68,9 +69,11 @@ $proofHash = (Get-FileHash -LiteralPath $proofPath -Algorithm SHA256).Hash.ToLow
 $hashPath = "$proofPath.sha256"
 Write-Utf8LfFile -Path $hashPath -Value "$proofHash  $(Split-Path -Leaf $proofPath)"
 
-if ($Sign) {
+$shouldSign = $Sign -or (Test-TrustedProofSignerSecretAvailable -TrustedSignersPath $TrustedSignersPath)
+if ($shouldSign) {
     $signaturePath = "$proofPath.asc"
-    & gpg --armor --detach-sign --output $signaturePath $proofPath
+    $gpg = Get-GpgPath
+    & $gpg --armor --detach-sign --output $signaturePath $proofPath
     if ($LASTEXITCODE -ne 0) {
         throw "gpg failed to sign proof file."
     }
@@ -78,6 +81,6 @@ if ($Sign) {
 
 Write-Host "Created proof: $proofPath"
 Write-Host "Created proof hash: $hashPath"
-if ($Sign) {
+if ($shouldSign) {
     Write-Host "Created proof signature: $signaturePath"
 }

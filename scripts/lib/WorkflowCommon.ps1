@@ -129,6 +129,212 @@ function Get-ProofSafeName {
     return $safe
 }
 
+function ConvertTo-RepositoryRelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Path
+    )
+
+    $repoRoot = Get-RepoRoot
+    $resolvedPath = if (Test-Path -LiteralPath $Path) {
+        (Resolve-Path -LiteralPath $Path).Path
+    }
+    else {
+        [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $Path))
+    }
+
+    $repoRootWithSeparator = if ($repoRoot.EndsWith([System.IO.Path]::DirectorySeparatorChar) -or
+        $repoRoot.EndsWith([System.IO.Path]::AltDirectorySeparatorChar)) {
+        $repoRoot
+    }
+    else {
+        $repoRoot + [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $repoUri = [System.Uri]::new($repoRootWithSeparator)
+    $pathUri = [System.Uri]::new($resolvedPath)
+    $relative = [System.Uri]::UnescapeDataString($repoUri.MakeRelativeUri($pathUri).ToString())
+    if ($relative.StartsWith("..")) {
+        throw "Path is outside the repository: $Path"
+    }
+
+    return ($relative -replace "\\", "/")
+}
+
+function Normalize-GpgFingerprint {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Fingerprint
+    )
+
+    return (($Fingerprint -replace "\s+", "").ToUpperInvariant())
+}
+
+function Get-TrustedProofSignersPath {
+    param(
+        [string] $TrustedSignersPath = ""
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($TrustedSignersPath)) {
+        return $TrustedSignersPath
+    }
+
+    return (Join-Path (Get-RepoRoot) "docs/proofs/trusted-signers/trusted-proof-signers.json")
+}
+
+function Get-TrustedProofSignerFingerprints {
+    param(
+        [string] $TrustedSignersPath = ""
+    )
+
+    $path = Get-TrustedProofSignersPath -TrustedSignersPath $TrustedSignersPath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        return @()
+    }
+
+    $config = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
+    $fingerprints = @()
+    if ($null -ne $config.trusted_fingerprints) {
+        $fingerprints += @($config.trusted_fingerprints)
+    }
+    elseif ($null -ne $config.fingerprints) {
+        $fingerprints += @($config.fingerprints)
+    }
+
+    return @($fingerprints |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        ForEach-Object { Normalize-GpgFingerprint $_ })
+}
+
+function Test-TrustedProofSignerConfigured {
+    param(
+        [string] $TrustedSignersPath = ""
+    )
+
+    return ((Get-TrustedProofSignerFingerprints -TrustedSignersPath $TrustedSignersPath).Count -gt 0)
+}
+
+function Get-GpgPath {
+    $command = Get-Command gpg -ErrorAction SilentlyContinue
+    if ($null -eq $command) {
+        throw "GPG executable 'gpg' was not found on PATH. Install GPG before signing or enforcing signed proofs."
+    }
+
+    return $command.Source
+}
+
+function Get-GpgSecretKeyFingerprints {
+    try {
+        $gpg = Get-GpgPath
+    }
+    catch {
+        return @()
+    }
+
+    $result = Invoke-ExternalCommand -FileName $gpg -Arguments @("--list-secret-keys", "--with-colons")
+    if ($result.ExitCode -ne 0) {
+        return @()
+    }
+
+    return @($result.StdOut -split "`r?`n" |
+        Where-Object { $_ -like "fpr:*" } |
+        ForEach-Object { ($_ -split ":")[9] } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        ForEach-Object { Normalize-GpgFingerprint $_ })
+}
+
+function Test-TrustedProofSignerSecretAvailable {
+    param(
+        [string] $TrustedSignersPath = ""
+    )
+
+    $trusted = @(Get-TrustedProofSignerFingerprints -TrustedSignersPath $TrustedSignersPath)
+    if ($trusted.Count -eq 0) {
+        return $false
+    }
+
+    $secretFingerprints = @(Get-GpgSecretKeyFingerprints)
+    foreach ($fingerprint in $secretFingerprints) {
+        if ($trusted -contains $fingerprint) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Get-GpgSignatureFingerprint {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $SignaturePath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $SignedPath
+    )
+
+    $gpg = Get-GpgPath
+    $result = Invoke-ExternalCommand -FileName $gpg -Arguments @(
+        "--status-fd", "1",
+        "--verify", $SignaturePath,
+        $SignedPath
+    )
+
+    if ($result.ExitCode -ne 0) {
+        throw "gpg signature verification failed. $($result.Output)"
+    }
+
+    $validSigLine = @($result.StdOut -split "`r?`n" |
+        Where-Object { $_ -match "^\[GNUPG:\]\s+VALIDSIG\s+([0-9A-Fa-f]+)" } |
+        Select-Object -First 1)
+
+    if ($validSigLine.Count -eq 0 -or $validSigLine[0] -notmatch "^\[GNUPG:\]\s+VALIDSIG\s+([0-9A-Fa-f]+)") {
+        throw "gpg did not report a valid signature fingerprint."
+    }
+
+    return Normalize-GpgFingerprint $matches[1]
+}
+
+function Assert-RequiredText {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Name,
+
+        [string] $Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name is required."
+    }
+}
+
+function Assert-PrMetadata {
+    param(
+        [string] $SpecPath,
+        [string] $Summary,
+        [string] $RiskNotes,
+        [string] $RollbackNotes
+    )
+
+    Assert-RequiredText -Name "SpecPath" -Value $SpecPath
+    Assert-RequiredText -Name "Summary" -Value $Summary
+    Assert-RequiredText -Name "RiskNotes" -Value $RiskNotes
+    Assert-RequiredText -Name "RollbackNotes" -Value $RollbackNotes
+
+    $repoRoot = Get-RepoRoot
+    $resolvedSpecPath = if ([System.IO.Path]::IsPathRooted($SpecPath)) {
+        $SpecPath
+    }
+    else {
+        Join-Path $repoRoot $SpecPath
+    }
+
+    if (-not (Test-Path -LiteralPath $resolvedSpecPath -PathType Leaf)) {
+        throw "SpecPath does not exist: $SpecPath"
+    }
+
+    return ConvertTo-RepositoryRelativePath $resolvedSpecPath
+}
+
 function Get-GitHubCliPath {
     $command = Get-Command gh -ErrorAction SilentlyContinue
     if ($null -ne $command) {
@@ -439,6 +645,129 @@ function Sync-LocalBranchToOrigin {
     Invoke-GitProcess @("switch", $Branch) | Write-Host
     Invoke-GitProcess @("merge", "--ff-only", "origin/$Branch") | Write-Host
     Write-Host "Checkout is synced on $Branch."
+}
+
+function Assert-BranchContainsRemoteBranch {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $RemoteBranch,
+
+        [string] $LocalRef = "HEAD"
+    )
+
+    Invoke-GitProcess @("fetch", "origin", $RemoteBranch) | Write-Host
+    $result = Invoke-ExternalCommand -FileName "git" -Arguments @(
+        "merge-base",
+        "--is-ancestor",
+        "origin/$RemoteBranch",
+        $LocalRef
+    ) -WorkingDirectory (Get-RepoRoot)
+
+    if ($result.ExitCode -ne 0) {
+        throw "$LocalRef does not contain origin/$RemoteBranch. Sync or rebase before preparing this workflow."
+    }
+}
+
+function Get-LatestMatchingProof {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("pr-to-test", "promote-to-main")]
+        [string] $Kind,
+
+        [Parameter(Mandatory = $true)]
+        [string] $TargetBranch
+    )
+
+    $repoRoot = Get-RepoRoot
+    $safeTarget = Get-ProofSafeName $TargetBranch
+    $proofDir = Join-Path $repoRoot "docs/proofs/$Kind/$safeTarget"
+    if (-not (Test-Path -LiteralPath $proofDir -PathType Container)) {
+        return $null
+    }
+
+    $currentDigest = Get-RepositoryContentDigest
+    $matches = New-Object System.Collections.Generic.List[object]
+    foreach ($proofFile in @(Get-ChildItem -LiteralPath $proofDir -Filter "*.proof.json" -File)) {
+        try {
+            $proof = Get-Content -Raw -LiteralPath $proofFile.FullName | ConvertFrom-Json
+        }
+        catch {
+            continue
+        }
+
+        if ($proof.proof_kind -eq $Kind -and
+            $proof.target_branch -eq $TargetBranch -and
+            $proof.validation.result -eq "passed" -and
+            $proof.subject.content_digest -eq $currentDigest.Digest) {
+            $matches.Add([pscustomobject]@{
+                Path = $proofFile.FullName
+                RelativePath = ConvertTo-RepositoryRelativePath $proofFile.FullName
+                Proof = $proof
+            })
+        }
+    }
+
+    return ($matches |
+        Sort-Object { $_.Proof.created_utc } -Descending |
+        Select-Object -First 1)
+}
+
+function Convert-ValidationStepsToMarkdown {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object] $Validation
+    )
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($step in @($Validation.steps)) {
+        $line = "- $($step.status): $($step.name)"
+        if ($step.status -eq "skipped" -and -not [string]::IsNullOrWhiteSpace($step.summary)) {
+            $line += " ($($step.summary))"
+        }
+        $lines.Add($line)
+    }
+
+    return ($lines -join "`n")
+}
+
+function Get-RetrospectiveForBranch {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Kind,
+
+        [Parameter(Mandatory = $true)]
+        [string] $SourceBranch
+    )
+
+    $retrospectiveRoot = Join-Path (Get-RepoRoot) "docs/retrospectives"
+    if (-not (Test-Path -LiteralPath $retrospectiveRoot -PathType Container)) {
+        return $null
+    }
+
+    foreach ($file in @(Get-ChildItem -LiteralPath $retrospectiveRoot -Filter "*.md" -File |
+            Where-Object { $_.Name -ne "TEMPLATE.md" })) {
+        $text = Get-Content -Raw -LiteralPath $file.FullName
+        if ($text -notmatch "(?s)^---\s*(?<frontmatter>.*?)\s*---") {
+            continue
+        }
+
+        $fields = @{}
+        foreach ($line in ($matches.frontmatter -split "`r?`n")) {
+            if ($line -match "^([A-Za-z_]+):\s*(.*)$") {
+                $fields[$matches[1].ToLowerInvariant()] = $matches[2].Trim()
+            }
+        }
+
+        if ($fields["kind"] -eq $Kind -and $fields["source_branch"] -eq $SourceBranch) {
+            return [pscustomobject]@{
+                Path = $file.FullName
+                RelativePath = ConvertTo-RepositoryRelativePath $file.FullName
+                Fields = $fields
+            }
+        }
+    }
+
+    return $null
 }
 
 function Ensure-Directory {

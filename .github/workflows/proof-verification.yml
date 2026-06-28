@@ -42,6 +42,7 @@ jobs:
           BASE_REF: ${{ github.base_ref || inputs.target_branch }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PROOF_KIND: ${{ inputs.kind }}
+          # Stage A: keep false until trusted signer fingerprints are committed.
           REQUIRE_PROOF_SIGNATURE: "false"
         run: |
           if ($env:PROOF_KIND) {
