@@ -114,7 +114,7 @@ Rust checks are skipped until `server-rust/Cargo.toml` exists.
 
     if ($null -ne $existingPr -and $existingPr.state -eq "MERGED") {
         Assert-RemoteBranchContainsCommit -Branch $targetBranch -CommitSha $currentHead
-        Write-Host "PR already merged and origin/$targetBranch contains $currentHead: $($existingPr.url)"
+        Write-Host "PR already merged and origin/$targetBranch contains ${currentHead}: $($existingPr.url)"
         return
     }
 
