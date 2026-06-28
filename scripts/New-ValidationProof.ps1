@@ -32,15 +32,13 @@ Ensure-Directory $artifactDir
 $validationResultPath = Join-Path $artifactDir "$Kind-$($head.Substring(0, 12)).validation.json"
 
 try {
-    $validationArgs = @(
-        "-ResultPath", $validationResultPath,
-        "-Profile", $ValidationProfile
-    )
+    $validationArgs = @{
+        ResultPath = $validationResultPath
+        Profile = $ValidationProfile
+    }
     if ($ValidationProfile -eq "docs-only") {
-        $validationArgs += @(
-            "-SkipFullValidationReason", $ValidationSkipReason,
-            "-DocsOnlyBaseBranch", $TargetBranch
-        )
+        $validationArgs.SkipFullValidationReason = $ValidationSkipReason
+        $validationArgs.DocsOnlyBaseBranch = $TargetBranch
     }
 
     & (Join-Path $repoRoot "scripts/Invoke-LocalValidation.ps1") @validationArgs

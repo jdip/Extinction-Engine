@@ -97,3 +97,7 @@ Focused checks:
   error.
 - `./scripts/Invoke-LocalValidation.ps1` passed; Rust format, clippy, and tests
   were skipped because `server-rust/Cargo.toml` does not exist yet.
+- The first PR-to-test attempt failed during proof generation because
+  `New-ValidationProof.ps1` used array splatting for named PowerShell
+  parameters. The script now uses hashtable splatting for
+  `Invoke-LocalValidation.ps1`.
