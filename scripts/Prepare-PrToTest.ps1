@@ -295,9 +295,9 @@ accepted_risks: $RiskNotes
 # PR $($pr.number) $($branch -replace '^codex/', '' -replace '[-_]+', ' ') Retrospective
 
 PR: $($pr.url)
-Outcome: Merged to `test` on $created.
+Outcome: Merged to test on $created.
 Validation reviewed: local validation proof, GitHub proof check, merge result,
-and local `test` sync to `$mergedHead`.
+and local test sync to $mergedHead.
 Accepted risks: $RiskNotes
 
 ## Friction Points That Need To Be Addressed In AGENTS.md

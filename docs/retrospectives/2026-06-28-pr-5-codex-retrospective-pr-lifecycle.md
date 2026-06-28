@@ -10,9 +10,9 @@ accepted_risks: Rust checks are skipped because server-rust/Cargo.toml does not 
 # PR 5 retrospective pr lifecycle Retrospective
 
 PR: https://github.com/jdip/Extinction-Engine/pull/5
-Outcome: Merged to 	est on 2026-06-28.
+Outcome: Merged to test on 2026-06-28.
 Validation reviewed: local validation proof, GitHub proof check, merge result,
-and local 	est sync to $mergedHead.
+and local test sync to 38043167f5fa407904eb4100f6331bab1d5ca1e1.
 Accepted risks: Rust checks are skipped because server-rust/Cargo.toml does not exist yet; docs-only validation is limited to AGENTS.md/docs paths and is not used for this script-changing branch.
 
 ## Friction Points That Need To Be Addressed In AGENTS.md
