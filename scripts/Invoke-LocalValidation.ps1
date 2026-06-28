@@ -24,6 +24,11 @@ $steps += Invoke-ValidationCommand `
     -Command "./scripts/Verify-RemediationRecords.ps1" `
     -Script { & (Join-Path $repoRoot "scripts/Verify-RemediationRecords.ps1") }
 
+$steps += Invoke-ValidationCommand `
+    -Name "durable spec validation" `
+    -Command "./scripts/Verify-Specs.ps1" `
+    -Script { & (Join-Path $repoRoot "scripts/Verify-Specs.ps1") }
+
 $serverCargo = Join-Path $repoRoot "server-rust/Cargo.toml"
 if (Test-Path -LiteralPath $serverCargo -PathType Leaf) {
     $serverRoot = Join-Path $repoRoot "server-rust"

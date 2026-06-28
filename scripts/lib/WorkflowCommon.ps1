@@ -293,8 +293,13 @@ function Get-GitHubPullRequestForBranches {
         return $null
     }
 
-    $pullRequests = @($json | ConvertFrom-Json)
+    $parsed = $json | ConvertFrom-Json
+    $pullRequests = @($parsed)
     if ($pullRequests.Count -eq 0) {
+        return $null
+    }
+
+    if ($pullRequests.Count -eq 1 -and $pullRequests[0] -is [System.Array] -and $pullRequests[0].Count -eq 0) {
         return $null
     }
 
@@ -422,6 +427,18 @@ function Assert-RemoteBranchContainsCommit {
     if ($result.ExitCode -ne 0) {
         throw "origin/$Branch does not contain expected commit $CommitSha."
     }
+}
+
+function Sync-LocalBranchToOrigin {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Branch
+    )
+
+    Invoke-GitProcess @("fetch", "origin", $Branch) | Write-Host
+    Invoke-GitProcess @("switch", $Branch) | Write-Host
+    Invoke-GitProcess @("merge", "--ff-only", "origin/$Branch") | Write-Host
+    Write-Host "Checkout is synced on $Branch."
 }
 
 function Ensure-Directory {
