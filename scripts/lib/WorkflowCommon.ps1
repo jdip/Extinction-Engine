@@ -293,8 +293,13 @@ function Get-GitHubPullRequestForBranches {
         return $null
     }
 
-    $pullRequests = @($json | ConvertFrom-Json)
+    $parsed = $json | ConvertFrom-Json
+    $pullRequests = @($parsed)
     if ($pullRequests.Count -eq 0) {
+        return $null
+    }
+
+    if ($pullRequests.Count -eq 1 -and $pullRequests[0] -is [System.Array] -and $pullRequests[0].Count -eq 0) {
         return $null
     }
 
