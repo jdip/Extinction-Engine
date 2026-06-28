@@ -52,7 +52,9 @@ if (-not $proofValid) {
     $proofPath = Join-Path $proofDir "$proofId.proof.json"
     $proofHashPath = "$proofPath.sha256"
     $proofSignaturePath = "$proofPath.asc"
+    $proofPrefix = "promote-to-main-$safeTarget-$safeBranch-"
 
+    Remove-StaleProofArtifacts -ProofDirectory $proofDir -ProofPrefix $proofPrefix
     & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -Sign:$Sign
     & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch
 
@@ -67,7 +69,7 @@ if (-not $proofValid) {
         }
     }
 
-    & git add -- $pathsToStage
+    & git add -- $proofDir
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to stage generated proof artifacts."
     }

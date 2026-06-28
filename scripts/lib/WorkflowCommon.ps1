@@ -503,7 +503,44 @@ function Write-JsonFile {
     $directory = Split-Path -Parent $Path
     Ensure-Directory $directory
     $json = $InputObject | ConvertTo-Json -Depth 32
-    Set-Content -LiteralPath $Path -Value $json -Encoding UTF8
+    Write-Utf8LfFile -Path $Path -Value $json
+}
+
+function Write-Utf8LfFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Path,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Value
+    )
+
+    $directory = Split-Path -Parent $Path
+    Ensure-Directory $directory
+    $normalized = $Value -replace "`r`n", "`n"
+    if (-not $normalized.EndsWith("`n")) {
+        $normalized += "`n"
+    }
+
+    [System.IO.File]::WriteAllText($Path, $normalized, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Remove-StaleProofArtifacts {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ProofDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string] $ProofPrefix
+    )
+
+    if (-not (Test-Path -LiteralPath $ProofDirectory -PathType Container)) {
+        return
+    }
+
+    Get-ChildItem -LiteralPath $ProofDirectory -File |
+        Where-Object { $_.Name.StartsWith($ProofPrefix) } |
+        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 }
 
 function New-SkippedValidationStep {

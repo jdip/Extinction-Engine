@@ -66,7 +66,7 @@ Write-JsonFile -InputObject $proof -Path $proofPath
 
 $proofHash = (Get-FileHash -LiteralPath $proofPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $hashPath = "$proofPath.sha256"
-Set-Content -LiteralPath $hashPath -Value "$proofHash  $(Split-Path -Leaf $proofPath)" -Encoding ASCII
+Write-Utf8LfFile -Path $hashPath -Value "$proofHash  $(Split-Path -Leaf $proofPath)"
 
 if ($Sign) {
     $signaturePath = "$proofPath.asc"
