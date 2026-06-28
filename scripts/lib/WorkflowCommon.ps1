@@ -194,10 +194,7 @@ function Push-CurrentBranch {
     $processInfo.UseShellExecute = $false
     $processInfo.RedirectStandardOutput = $true
     $processInfo.RedirectStandardError = $true
-    $processInfo.ArgumentList.Add("push")
-    $processInfo.ArgumentList.Add("-u")
-    $processInfo.ArgumentList.Add("origin")
-    $processInfo.ArgumentList.Add($Branch)
+    $processInfo.Arguments = "push -u origin `"$Branch`""
 
     $process = [System.Diagnostics.Process]::Start($processInfo)
     $standardOutput = $process.StandardOutput.ReadToEnd()
