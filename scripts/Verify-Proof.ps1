@@ -25,7 +25,7 @@ $currentDigest = Get-RepositoryContentDigest
 $safeTarget = Get-ProofSafeName $TargetBranch
 $proofDir = Join-Path $repoRoot "docs/proofs/$Kind/$safeTarget"
 if (-not (Test-Path -LiteralPath $proofDir -PathType Container)) {
-    throw "No proof directory found for $Kind -> $TargetBranch: $proofDir"
+    throw "No proof directory found for $Kind -> ${TargetBranch}: $proofDir"
 }
 
 $proofFiles = @(Get-ChildItem -LiteralPath $proofDir -Filter "*.proof.json" -File)
