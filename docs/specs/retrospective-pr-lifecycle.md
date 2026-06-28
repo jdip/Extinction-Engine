@@ -104,5 +104,6 @@ Focused checks:
 - Post-merge review of the PR #5 retrospective found that Markdown backticks
   inside the expandable PowerShell here-string were interpreted as escapes,
   producing tab characters and a literal `$mergedHead`. The generator now uses
-  plain text for those generated lines, and the PR #5 retrospective was
-  corrected to include the actual merge SHA.
+  plain text for those generated lines, the retrospective validator rejects tab
+  escape artifacts and unresolved merged-head placeholders, and the PR #5
+  retrospective was corrected to include the actual merge SHA.
