@@ -1,0 +1,68 @@
+name: Proof verification
+
+on:
+  pull_request:
+    branches:
+      - test
+      - main
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Proof kind to verify.
+        required: true
+        type: choice
+        options:
+          - pr-to-test
+          - promote-to-main
+      target_branch:
+        description: Target branch for the proof.
+        required: true
+        type: choice
+        options:
+          - test
+          - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify-proof:
+    name: Verify checked-in local proof
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify proof only
+        shell: pwsh
+        env:
+          BASE_REF: ${{ github.base_ref || inputs.target_branch }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PROOF_KIND: ${{ inputs.kind }}
+          REQUIRE_PROOF_SIGNATURE: "false"
+        run: |
+          if ($env:PROOF_KIND) {
+            $kind = $env:PROOF_KIND
+          } elseif ($env:BASE_REF -eq "test") {
+            $kind = "pr-to-test"
+          } elseif ($env:BASE_REF -eq "main") {
+            $kind = "promote-to-main"
+          } else {
+            throw "No proof policy is configured for base branch '$env:BASE_REF'."
+          }
+
+          $params = @{
+            Kind = $kind
+            TargetBranch = $env:BASE_REF
+          }
+          if ($env:HEAD_SHA) {
+            $params.HeadSha = $env:HEAD_SHA
+          }
+          if ($env:REQUIRE_PROOF_SIGNATURE -eq "true") {
+            $params.RequireSignature = $true
+          }
+
+          ./scripts/Verify-Proof.ps1 @params
