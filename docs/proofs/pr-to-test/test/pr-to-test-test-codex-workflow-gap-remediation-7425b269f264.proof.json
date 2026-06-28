@@ -1,15 +1,15 @@
 {
     "schema_version":  1,
-    "proof_id":  "pr-to-test-test-codex-workflow-gap-remediation-5450ff5ba5bd",
+    "proof_id":  "pr-to-test-test-codex-workflow-gap-remediation-7425b269f264",
     "proof_kind":  "pr-to-test",
     "target_branch":  "test",
     "source_branch":  "codex/workflow-gap-remediation",
-    "created_utc":  "2026-06-28T19:56:11.2526998Z",
+    "created_utc":  "2026-06-28T20:03:30.7551080Z",
     "subject":  {
-                    "git_head":  "5450ff5ba5bd878a7f35537d3f5ddeff00a9af18",
-                    "git_tree":  "12d211fb6a12862608b569fe860eeb659e151666",
+                    "git_head":  "7425b269f264758a0d2d8f695cc4f9ed57731bef",
+                    "git_tree":  "00190db5bd1f43fa97e5012ad94e23add1acc0aa",
                     "content_digest_algorithm":  "sha256:git-index-manifest-v1",
-                    "content_digest":  "18a37fe336e5aa95517b2e5bfada3dac4cbfb01dd1409241ffa5864604b9dcc3",
+                    "content_digest":  "d47bff4d5112eeb241f5453b76d21ae3583779a1c5c9e3b9fda89f03b8286e29",
                     "tracked_file_count":  38,
                     "excluded_prefixes":  [
                                               "docs/proofs/"
@@ -18,8 +18,8 @@
     "validation":  {
                        "schema_version":  1,
                        "result":  "passed",
-                       "started_utc":  "2026-06-28T19:56:10.8826063Z",
-                       "completed_utc":  "2026-06-28T19:56:11.2241617Z",
+                       "started_utc":  "2026-06-28T20:03:30.4361284Z",
+                       "completed_utc":  "2026-06-28T20:03:30.7345765Z",
                        "environment":  {
                                            "repository_root":  ".",
                                            "repository_root_kind":  "current-checkout",
@@ -33,8 +33,8 @@
                                          "command":  "git diff --check",
                                          "status":  "passed",
                                          "exit_code":  0,
-                                         "started_utc":  "2026-06-28T19:56:10.8861062Z",
-                                         "completed_utc":  "2026-06-28T19:56:10.9091329Z",
+                                         "started_utc":  "2026-06-28T20:03:30.4406378Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.4751970Z",
                                          "summary":  "Passed",
                                          "output":  [
 
@@ -45,8 +45,8 @@
                                          "command":  "git diff --cached --check",
                                          "status":  "passed",
                                          "exit_code":  0,
-                                         "started_utc":  "2026-06-28T19:56:10.9101352Z",
-                                         "completed_utc":  "2026-06-28T19:56:10.9346596Z",
+                                         "started_utc":  "2026-06-28T20:03:30.4761995Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.5117766Z",
                                          "summary":  "Passed",
                                          "output":  [
 
@@ -57,8 +57,8 @@
                                          "command":  "./scripts/Verify-RemediationRecords.ps1",
                                          "status":  "passed",
                                          "exit_code":  0,
-                                         "started_utc":  "2026-06-28T19:56:10.9351595Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.0007716Z",
+                                         "started_utc":  "2026-06-28T20:03:30.5127791Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.5878803Z",
                                          "summary":  "Passed",
                                          "output":  [
 
@@ -69,8 +69,8 @@
                                          "command":  "./scripts/Verify-Specs.ps1",
                                          "status":  "passed",
                                          "exit_code":  0,
-                                         "started_utc":  "2026-06-28T19:56:11.0012718Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.0954101Z",
+                                         "started_utc":  "2026-06-28T20:03:30.5878803Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.6454418Z",
                                          "summary":  "Passed",
                                          "output":  [
 
@@ -81,8 +81,8 @@
                                          "command":  "./scripts/Verify-Retrospectives.ps1",
                                          "status":  "passed",
                                          "exit_code":  0,
-                                         "started_utc":  "2026-06-28T19:56:11.0959101Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.2201564Z",
+                                         "started_utc":  "2026-06-28T20:03:30.6459421Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.7320770Z",
                                          "summary":  "Passed",
                                          "output":  [
 
@@ -93,8 +93,8 @@
                                          "command":  "",
                                          "status":  "skipped",
                                          "exit_code":  null,
-                                         "started_utc":  "2026-06-28T19:56:11.2211587Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.2211587Z",
+                                         "started_utc":  "2026-06-28T20:03:30.7330768Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.7330768Z",
                                          "summary":  "server-rust/Cargo.toml does not exist yet.",
                                          "output":  [
 
@@ -105,8 +105,8 @@
                                          "command":  "",
                                          "status":  "skipped",
                                          "exit_code":  null,
-                                         "started_utc":  "2026-06-28T19:56:11.2216617Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.2216617Z",
+                                         "started_utc":  "2026-06-28T20:03:30.7330768Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.7330768Z",
                                          "summary":  "server-rust/Cargo.toml does not exist yet.",
                                          "output":  [
 
@@ -117,8 +117,8 @@
                                          "command":  "",
                                          "status":  "skipped",
                                          "exit_code":  null,
-                                         "started_utc":  "2026-06-28T19:56:11.2221615Z",
-                                         "completed_utc":  "2026-06-28T19:56:11.2221615Z",
+                                         "started_utc":  "2026-06-28T20:03:30.7330768Z",
+                                         "completed_utc":  "2026-06-28T20:03:30.7330768Z",
                                          "summary":  "server-rust/Cargo.toml does not exist yet.",
                                          "output":  [
 
