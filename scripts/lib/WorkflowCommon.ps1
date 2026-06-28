@@ -189,21 +189,25 @@ function Push-CurrentBranch {
         [string] $Branch
     )
 
-    $oldErrorActionPreference = $ErrorActionPreference
+    $stderrPath = [System.IO.Path]::GetTempFileName()
     try {
-        $ErrorActionPreference = "Continue"
-        $output = @(& git push -u origin $Branch 2>&1)
+        $output = @(& git push -u origin $Branch 2> $stderrPath)
         $exitCode = $LASTEXITCODE
     }
     finally {
-        $ErrorActionPreference = $oldErrorActionPreference
+        $stderrOutput = @()
+        if (Test-Path -LiteralPath $stderrPath -PathType Leaf) {
+            $stderrOutput = @(Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue)
+            Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+        }
     }
 
     if ($exitCode -ne 0) {
-        throw "git push -u origin $Branch failed. $(($output | Out-String).Trim())"
+        $combinedOutput = @($output) + @($stderrOutput)
+        throw "git push -u origin $Branch failed. $(($combinedOutput | Out-String).Trim())"
     }
 
-    return ($output | Out-String).Trim()
+    return ((@($output) + @($stderrOutput)) | Out-String).Trim()
 }
 
 function Ensure-Directory {
