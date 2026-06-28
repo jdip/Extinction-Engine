@@ -1,0 +1,82 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE state
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs and local runtime output
+*.log
+logs/
+artifacts/
+.proof-local/
+tmp/
+temp/
+
+# Rust
+target/
+**/target/
+*.profraw
+*.profdata
+
+# Keep Cargo.lock tracked for this application/server workspace.
+
+# Unreal Engine generated files
+client-unreal/Binaries/
+client-unreal/Build/
+client-unreal/DerivedDataCache/
+client-unreal/Intermediate/
+client-unreal/Saved/
+client-unreal/.vs/
+client-unreal/*.sln
+client-unreal/*.suo
+client-unreal/*.opensdf
+client-unreal/*.sdf
+client-unreal/*.VC.db
+client-unreal/*.VC.VC.opendb
+
+# Unreal local plugin and generated binary output
+client-unreal/Plugins/*/Binaries/
+client-unreal/Plugins/*/Intermediate/
+
+# Unreal crash and automation output
+client-unreal/Saved/Crashes/
+client-unreal/Saved/Logs/
+client-unreal/Saved/Automation/
+
+# Build and package output
+dist/
+build/
+out/
+coverage/
+
+# Tool caches
+.cache/
+.cargo/.package-cache/
+.rustup/
+
+# Local save data and generated worlds
+saves/
+worlds/
+*.sav
+*.world
