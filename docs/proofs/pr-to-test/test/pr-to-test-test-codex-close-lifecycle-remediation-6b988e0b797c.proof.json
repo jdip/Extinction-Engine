@@ -1,0 +1,111 @@
+{
+    "schema_version":  1,
+    "proof_id":  "pr-to-test-test-codex-close-lifecycle-remediation-6b988e0b797c",
+    "proof_kind":  "pr-to-test",
+    "target_branch":  "test",
+    "source_branch":  "codex/close-lifecycle-remediation",
+    "created_utc":  "2026-06-28T19:22:04.0304036Z",
+    "subject":  {
+                    "git_head":  "6b988e0b797ca6fe2724893730e92d1ef946ba30",
+                    "git_tree":  "3a99fe20a3263dfd01f710c3d54ec797ad68d67a",
+                    "content_digest_algorithm":  "sha256:git-index-manifest-v1",
+                    "content_digest":  "8eab85c2901c6fac8272de891b213487e9906bdf2cbb85e84c9436108b85e565",
+                    "tracked_file_count":  30,
+                    "excluded_prefixes":  [
+                                              "docs/proofs/"
+                                          ]
+                },
+    "validation":  {
+                       "schema_version":  1,
+                       "result":  "passed",
+                       "started_utc":  "2026-06-28T19:22:03.8710590Z",
+                       "completed_utc":  "2026-06-28T19:22:04.0143614Z",
+                       "repository":  "C:\\Users\\jdipa\\Documents\\Github\\Extinction-Engine",
+                       "steps":  [
+                                     {
+                                         "name":  "git diff whitespace check",
+                                         "command":  "git diff --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T19:22:03.8760607Z",
+                                         "completed_utc":  "2026-06-28T19:22:03.9011134Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "git staged diff whitespace check",
+                                         "command":  "git diff --cached --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T19:22:03.9021129Z",
+                                         "completed_utc":  "2026-06-28T19:22:03.9261552Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "remediation record validation",
+                                         "command":  "./scripts/Verify-RemediationRecords.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T19:22:03.9271572Z",
+                                         "completed_utc":  "2026-06-28T19:22:03.9742645Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "durable spec validation",
+                                         "command":  "./scripts/Verify-Specs.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T19:22:03.9747648Z",
+                                         "completed_utc":  "2026-06-28T19:22:04.0103499Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust format check",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T19:22:04.0118521Z",
+                                         "completed_utc":  "2026-06-28T19:22:04.0118521Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust clippy",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T19:22:04.0128590Z",
+                                         "completed_utc":  "2026-06-28T19:22:04.0128590Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust tests",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T19:22:04.0128590Z",
+                                         "completed_utc":  "2026-06-28T19:22:04.0128590Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     }
+                                 ]
+                   }
+}
