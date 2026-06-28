@@ -72,7 +72,7 @@ function Assert-CleanWorkingTree {
         [string] $Reason = "This workflow requires a clean working tree."
     )
 
-    $status = & git status --porcelain=v1 2>&1
+    $status = @(& git status --porcelain=v1 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "git status failed. $(($status | Out-String).Trim())"
     }
