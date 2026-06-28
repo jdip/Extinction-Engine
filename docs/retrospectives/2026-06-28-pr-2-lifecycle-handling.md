@@ -1,3 +1,12 @@
+---
+kind: pr-to-test
+source_branch: codex/lifecycle-handling
+created: 2026-06-28
+outcome: Merged to test on 2026-06-28.
+validation_reviewed: local validation proof, durable spec validation, GitHub proof verification, and final checkout sync to test
+accepted_risks: Rust checks were skipped because server-rust/Cargo.toml does not exist yet.
+---
+
 # PR 2 Lifecycle Handling Retrospective
 
 PR: https://github.com/jdip/Extinction-Engine/pull/2

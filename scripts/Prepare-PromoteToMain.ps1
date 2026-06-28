@@ -4,6 +4,11 @@ param(
     [switch] $NoPr,
     [switch] $NoMerge,
     [string] $ConfirmPromotion = "",
+    [string] $SpecPath = "",
+    [string] $Summary = "",
+    [string] $RiskNotes = "",
+    [string] $RollbackNotes = "",
+    [string] $TrustedSignersPath = "",
     [int] $CheckTimeoutSeconds = 600,
     [int] $CheckPollSeconds = 10
 )
@@ -34,10 +39,15 @@ if (-not [string]::IsNullOrWhiteSpace($ConfirmPromotion) -and $ConfirmPromotion 
 }
 
 Assert-CleanWorkingTree -Reason "Promotion requires test branch work committed before proof generation."
+Assert-BranchContainsRemoteBranch -RemoteBranch $targetBranch
+$relativeSpecPath = ""
+if (-not $NoPr) {
+    $relativeSpecPath = Assert-PrMetadata -SpecPath $SpecPath -Summary $Summary -RiskNotes $RiskNotes -RollbackNotes $RollbackNotes
+}
 
 $proofValid = $false
 try {
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
     $proofValid = $true
     Write-Host "Existing promote-to-main proof is valid for the current content digest."
 }
@@ -54,16 +64,16 @@ if (-not $proofValid) {
     $proofSignaturePath = "$proofPath.asc"
     $proofPrefix = "promote-to-main-$safeTarget-$safeBranch-"
 
-    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -Sign:$Sign
+    & (Join-Path $PSScriptRoot "New-ValidationProof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -Sign:$Sign -TrustedSignersPath $TrustedSignersPath
     $keepProofPaths = @($proofPath, $proofHashPath)
-    if ($Sign) {
+    if (Test-Path -LiteralPath $proofSignaturePath -PathType Leaf) {
         $keepProofPaths += $proofSignaturePath
     }
     Remove-StaleProofArtifacts -ProofDirectory $proofDir -ProofPrefix $proofPrefix -KeepPaths $keepProofPaths
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
 
     $pathsToStage = @($proofPath, $proofHashPath)
-    if ($Sign) {
+    if (Test-Path -LiteralPath $proofSignaturePath -PathType Leaf) {
         $pathsToStage += $proofSignaturePath
     }
 
@@ -86,7 +96,7 @@ if (-not $proofValid) {
         }
     }
 
-    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch
+    & (Join-Path $repoRoot "scripts/Verify-Proof.ps1") -Kind "promote-to-main" -TargetBranch $targetBranch -TrustedSignersPath $TrustedSignersPath
 }
 
 if (-not $NoPush) {
@@ -104,13 +114,32 @@ if (-not $NoPr) {
     $bodyPath = Join-Path $repoRoot "artifacts/pr-bodies/promote-to-main-$safeTarget-$safeBranch.md"
     Ensure-Directory (Split-Path -Parent $bodyPath)
     $currentHead = Get-HeadCommit
+    $selectedProof = Get-LatestMatchingProof -Kind "promote-to-main" -TargetBranch $targetBranch
+    if ($null -eq $selectedProof) {
+        throw "Could not find a valid promote-to-main proof for the current content digest."
+    }
+
+    $retrospective = Get-RetrospectiveForBranch -Kind "promote-to-main" -SourceBranch $branch
+    if ($null -eq $retrospective) {
+        throw "Missing promotion retrospective for source branch '$branch'. Create one with ./scripts/New-Retrospective.ps1 before preparing the promotion PR."
+    }
+
+    $validationSummary = Convert-ValidationStepsToMarkdown -Validation $selectedProof.Proof.validation
     $body = @"
 ## Summary
 
-Prepared by the local promote-to-main workflow script.
+$Summary
 
-This PR promotes `test` to `main` with a checked-in local validation proof.
-GitHub should only verify that the proof matches the current PR content digest.
+Prepared by the local promote-to-main workflow script. This PR promotes `test`
+to `main` with a checked-in local validation proof. GitHub should only verify
+that the proof matches the current PR content digest.
+
+## Lifecycle Records
+
+- Spec: `$relativeSpecPath`
+- Retrospective: `$($retrospective.RelativePath)`
+- Proof: `$($selectedProof.RelativePath)`
+- Proof id: `$($selectedProof.Proof.proof_id)`
 
 ## Validation
 
@@ -118,7 +147,15 @@ GitHub should only verify that the proof matches the current PR content digest.
 - `./scripts/Verify-Proof.ps1 -Kind promote-to-main -TargetBranch main` passed.
 - Current PR head: `$currentHead`
 
-Rust checks are skipped until `server-rust/Cargo.toml` exists.
+$validationSummary
+
+## Risks
+
+$RiskNotes
+
+## Rollback
+
+$RollbackNotes
 "@
     Set-Content -LiteralPath $bodyPath -Value $body -Encoding UTF8
 

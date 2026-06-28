@@ -17,6 +17,12 @@ After the initial commit on `main`, run:
 ./scripts/Bootstrap-TestBranch.ps1
 ```
 
+For normal feature work, start from a synced integration branch:
+
+```powershell
+./scripts/Start-FeatureWork.ps1 -Name "short-task-name"
+```
+
 ## Proof Model
 
 Proof files live under `docs/proofs/` and are intended to be committed.
@@ -40,13 +46,21 @@ invalidating the content that was tested.
 Detached GPG signatures are optional at first. Use `-Sign` when preparing a
 proof. Once trusted public keys are documented, set
 `REQUIRE_PROOF_SIGNATURE` to `true` in the GitHub verification workflow.
+Trusted signer fingerprints live in
+`docs/proofs/trusted-signers/trusted-proof-signers.json`. Required-signature
+verification fails closed until this allowlist contains at least one full
+fingerprint.
 
 ## Feature PR To Test
 
 From a clean feature branch:
 
 ```powershell
-./scripts/Prepare-PrToTest.ps1
+./scripts/Prepare-PrToTest.ps1 `
+  -SpecPath docs/specs/example.md `
+  -Summary "Behavior change summary." `
+  -RiskNotes "Known risks." `
+  -RollbackNotes "Rollback approach."
 ```
 
 This command runs local validation, creates or reuses a matching proof, commits
@@ -60,12 +74,23 @@ The GitHub gate only runs:
 ./scripts/Verify-Proof.ps1 -Kind pr-to-test -TargetBranch test
 ```
 
+The prepare script also requires a retrospective record for the source branch.
+Create one before preparing the PR:
+
+```powershell
+./scripts/New-Retrospective.ps1 -Kind pr-to-test -SourceBranch codex/example -Title "PR X Example Retrospective"
+```
+
 ## Promote Test To Main
 
 From a clean `test` branch:
 
 ```powershell
-./scripts/Prepare-PromoteToMain.ps1
+./scripts/Prepare-PromoteToMain.ps1 `
+  -SpecPath docs/specs/example.md `
+  -Summary "Promotion summary." `
+  -RiskNotes "Known risks." `
+  -RollbackNotes "Rollback approach."
 ```
 
 This command prepares the promotion PR but does not merge by default. To merge
@@ -94,3 +119,25 @@ Use helpers instead of hand-writing records when possible:
 ```
 
 Every validation run checks remediation record structure.
+
+## Retrospective Records
+
+Retrospective records live in `docs/retrospectives/` and use
+`docs/retrospectives/TEMPLATE.md`. Local validation runs:
+
+```powershell
+./scripts/Verify-Retrospectives.ps1
+```
+
+The validator checks record shape and requires every checked-in `pr-to-test`
+proof source branch to have a matching retrospective.
+
+## Branch Cleanup
+
+Merged feature branch cleanup is dry-run-first:
+
+```powershell
+./scripts/Clean-MergedBranches.ps1
+```
+
+Use `-ConfirmDeleteMergedBranches` only after reviewing the listed branches.

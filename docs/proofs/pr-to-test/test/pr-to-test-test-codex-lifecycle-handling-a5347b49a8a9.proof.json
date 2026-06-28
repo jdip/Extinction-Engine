@@ -20,7 +20,10 @@
                        "result":  "passed",
                        "started_utc":  "2026-06-28T19:19:24.4552429Z",
                        "completed_utc":  "2026-06-28T19:19:24.6140922Z",
-                       "repository":  "C:\\Users\\jdipa\\Documents\\Github\\Extinction-Engine",
+                       "environment":  {
+                                           "repository_root":  ".",
+                                           "repository_root_kind":  "current-checkout"
+                                       },
                        "steps":  [
                                      {
                                          "name":  "git diff whitespace check",

@@ -29,6 +29,11 @@ $steps += Invoke-ValidationCommand `
     -Command "./scripts/Verify-Specs.ps1" `
     -Script { & (Join-Path $repoRoot "scripts/Verify-Specs.ps1") }
 
+$steps += Invoke-ValidationCommand `
+    -Name "retrospective validation" `
+    -Command "./scripts/Verify-Retrospectives.ps1" `
+    -Script { & (Join-Path $repoRoot "scripts/Verify-Retrospectives.ps1") }
+
 $serverCargo = Join-Path $repoRoot "server-rust/Cargo.toml"
 if (Test-Path -LiteralPath $serverCargo -PathType Leaf) {
     $serverRoot = Join-Path $repoRoot "server-rust"
@@ -74,7 +79,13 @@ $result = [pscustomobject]@{
     result = $resultStatus
     started_utc = $started
     completed_utc = Get-UtcIsoTimestamp
-    repository = $repoRoot
+    environment = [ordered]@{
+        repository_root = "."
+        repository_root_kind = "current-checkout"
+        shell = "powershell"
+        powershell_version = $PSVersionTable.PSVersion.ToString()
+        os = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
+    }
     steps = $steps
 }
 

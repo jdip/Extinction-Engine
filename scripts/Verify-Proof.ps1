@@ -7,7 +7,8 @@ param(
     [string] $TargetBranch,
 
     [string] $HeadSha = "",
-    [switch] $RequireSignature
+    [switch] $RequireSignature,
+    [string] $TrustedSignersPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,6 +23,12 @@ if (-not [string]::IsNullOrWhiteSpace($HeadSha) -and $currentHead -ne $HeadSha) 
 }
 
 $currentDigest = Get-RepositoryContentDigest
+$trustedFingerprints = @(Get-TrustedProofSignerFingerprints -TrustedSignersPath $TrustedSignersPath)
+if ($RequireSignature -and $trustedFingerprints.Count -eq 0) {
+    $configuredPath = Get-TrustedProofSignersPath -TrustedSignersPath $TrustedSignersPath
+    throw "Proof signatures are required, but no trusted proof signer fingerprints are configured. Add full fingerprints to $configuredPath before enabling mandatory signatures."
+}
+
 $safeTarget = Get-ProofSafeName $TargetBranch
 $proofDir = Join-Path $repoRoot "docs/proofs/$Kind/$safeTarget"
 if (-not (Test-Path -LiteralPath $proofDir -PathType Container)) {
@@ -87,9 +94,14 @@ foreach ($proofFile in $proofFiles) {
     }
 
     if (Test-Path -LiteralPath $signaturePath -PathType Leaf) {
-        $signatureOutput = & gpg --verify $signaturePath $proofFile.FullName 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            $errors.Add("gpg signature verification failed: $(($signatureOutput | Out-String).Trim())")
+        try {
+            $signatureFingerprint = Get-GpgSignatureFingerprint -SignaturePath $signaturePath -SignedPath $proofFile.FullName
+            if ($RequireSignature -and $trustedFingerprints -notcontains $signatureFingerprint) {
+                $errors.Add("Proof signature fingerprint '$signatureFingerprint' is not in the trusted proof signer allowlist.")
+            }
+        }
+        catch {
+            $errors.Add($_.Exception.Message)
         }
     }
 
