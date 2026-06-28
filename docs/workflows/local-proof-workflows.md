@@ -74,12 +74,27 @@ The GitHub gate only runs:
 ./scripts/Verify-Proof.ps1 -Kind pr-to-test -TargetBranch test
 ```
 
-The prepare script also requires a retrospective record for the source branch.
-Create one before preparing the PR:
+For documentation-only lifecycle evidence, use the docs-only validation profile
+with an explicit reason:
 
 ```powershell
-./scripts/New-Retrospective.ps1 -Kind pr-to-test -SourceBranch codex/example -Title "PR X Example Retrospective"
+./scripts/Prepare-PrToTest.ps1 `
+  -ValidationProfile docs-only `
+  -ValidationSkipReason "Documentation-only lifecycle evidence; no code or behavior changes." `
+  -SpecPath docs/specs/example.md `
+  -Summary "Documentation-only lifecycle update." `
+  -RiskNotes "Full validation suite intentionally skipped because only AGENTS.md/docs changed." `
+  -RollbackNotes "Revert the documentation commit."
 ```
+
+The docs-only profile rejects changed paths outside `AGENTS.md` and `docs/`.
+
+Retrospective notes are finalized after the PR process, not before it. Pass
+`-RetrospectiveFrictionNotes`, `-RetrospectiveAutomationNotes`, or
+`-RetrospectiveRemediationNotes` only when there is material content to
+preserve. If those notes are empty or only no-op text, the script prints the
+three retrospective sections in its completion output but does not create a
+durable retrospective file.
 
 ## Promote Test To Main
 
@@ -123,14 +138,15 @@ Every validation run checks remediation record structure.
 ## Retrospective Records
 
 Retrospective records live in `docs/retrospectives/` and use
-`docs/retrospectives/TEMPLATE.md`. Local validation runs:
+`docs/retrospectives/TEMPLATE.md`. Create one only for material friction,
+automation, or remediation findings. Local validation runs:
 
 ```powershell
 ./scripts/Verify-Retrospectives.ps1
 ```
 
-The validator checks record shape and requires every checked-in `pr-to-test`
-proof source branch to have a matching retrospective.
+The validator checks record shape, rejects draft/no-op records, and prevents
+duplicate records for the same lifecycle source.
 
 ## Branch Cleanup
 

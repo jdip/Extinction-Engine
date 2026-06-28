@@ -298,6 +298,33 @@ Handle merged branch cleanup through the project helper:
 The cleanup helper is dry-run-first. Do not delete local or remote branches
 without an explicit confirmation flag and the human's approval when needed.
 
+Retrospectives are post-lifecycle records. A draft or pre-PR retrospective does
+not satisfy the requirement. After PR-to-test, promotion, failed validation, or
+incident work completes, the final report must display the three retrospective
+sections: friction points for `AGENTS.md`, workflows to automate, and gaps that
+deserve remediation.
+
+Only create, commit, or PR a durable retrospective document when those sections
+contain a material lesson, automation need, or remediation gap. If the
+retrospective is effectively "everything good" or "everything fixed", report
+that in the final handoff and do not add a low-signal durable file.
+
+Documentation-only lifecycle PRs may use the docs-only validation escape hatch
+instead of running the full validation suite:
+
+```powershell
+./scripts/Prepare-PrToTest.ps1 `
+  -ValidationProfile docs-only `
+  -ValidationSkipReason "Documentation-only lifecycle evidence; no code or behavior changes." `
+  -SpecPath docs/specs/example.md `
+  -Summary "Documentation-only lifecycle update." `
+  -RiskNotes "Full validation suite intentionally skipped because only AGENTS.md/docs changed." `
+  -RollbackNotes "Revert the documentation commit."
+```
+
+The skip reason must be explicit, and the docs-only path must reject changes
+outside `AGENTS.md` and `docs/`.
+
 The `test` branch is the integration branch. Because Git cannot create real
 branch refs before the first commit, bootstrap it after the initial commit:
 
@@ -360,15 +387,20 @@ spec, PR, or checked-in record where it will be closed. Keep open records in
 `docs/remediation/open/` and move them to `docs/remediation/done/` when
 implemented, cancelled with rationale, or transferred elsewhere.
 
-Retrospectives belong in `docs/retrospectives/` and should be committed with
-or immediately after the lifecycle event they describe. A completed PR-to-test
-workflow must leave behind both validation proof and a retrospective.
-Use `docs/retrospectives/TEMPLATE.md` or `./scripts/New-Retrospective.ps1` for
-new retrospective records. Local validation includes retrospective validation.
+Durable retrospectives belong in `docs/retrospectives/` and should be
+committed with or immediately after the lifecycle event they describe when
+there is something material to preserve. A completed PR-to-test workflow must
+leave behind validation proof; it should leave a retrospective file only when
+the post-PR reflection contains material findings. Use
+`docs/retrospectives/TEMPLATE.md` or `./scripts/New-Retrospective.ps1` for new
+retrospective records. Local validation includes retrospective validation for
+records that exist.
 
 ## Agent Conduct
 
 - Read before editing.
+- If you edit `AGENTS.md`, immediately reload it before doing more work so the
+  new rules govern the rest of the turn.
 - Prefer project tools and local patterns.
 - Keep progress updates concise and factual.
 - Ask questions only when a reasonable assumption would be risky.

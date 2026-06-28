@@ -119,11 +119,6 @@ if (-not $NoPr) {
         throw "Could not find a valid promote-to-main proof for the current content digest."
     }
 
-    $retrospective = Get-RetrospectiveForBranch -Kind "promote-to-main" -SourceBranch $branch
-    if ($null -eq $retrospective) {
-        throw "Missing promotion retrospective for source branch '$branch'. Create one with ./scripts/New-Retrospective.ps1 before preparing the promotion PR."
-    }
-
     $validationSummary = Convert-ValidationStepsToMarkdown -Validation $selectedProof.Proof.validation
     $body = @"
 ## Summary
@@ -137,7 +132,7 @@ that the proof matches the current PR content digest.
 ## Lifecycle Records
 
 - Spec: `$relativeSpecPath`
-- Retrospective: `$($retrospective.RelativePath)`
+- Retrospective: finalized after promotion if material findings exist
 - Proof: `$($selectedProof.RelativePath)`
 - Proof id: `$($selectedProof.Proof.proof_id)`
 

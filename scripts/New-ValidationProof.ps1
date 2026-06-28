@@ -7,7 +7,12 @@ param(
     [string] $TargetBranch,
 
     [switch] $Sign,
-    [string] $TrustedSignersPath = ""
+    [string] $TrustedSignersPath = "",
+
+    [ValidateSet("full", "docs-only")]
+    [string] $ValidationProfile = "full",
+
+    [string] $ValidationSkipReason = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,7 +32,16 @@ Ensure-Directory $artifactDir
 $validationResultPath = Join-Path $artifactDir "$Kind-$($head.Substring(0, 12)).validation.json"
 
 try {
-    & (Join-Path $repoRoot "scripts/Invoke-LocalValidation.ps1") -ResultPath $validationResultPath
+    $validationArgs = @{
+        ResultPath = $validationResultPath
+        Profile = $ValidationProfile
+    }
+    if ($ValidationProfile -eq "docs-only") {
+        $validationArgs.SkipFullValidationReason = $ValidationSkipReason
+        $validationArgs.DocsOnlyBaseBranch = $TargetBranch
+    }
+
+    & (Join-Path $repoRoot "scripts/Invoke-LocalValidation.ps1") @validationArgs
 }
 catch {
     throw "Local validation failed. See $validationResultPath for captured evidence. $($_.Exception.Message)"
