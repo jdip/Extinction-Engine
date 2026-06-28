@@ -1,0 +1,99 @@
+﻿{
+    "schema_version":  1,
+    "proof_id":  "pr-to-test-test-codex-workflow-scaffolding-7d3a77350a73",
+    "proof_kind":  "pr-to-test",
+    "target_branch":  "test",
+    "source_branch":  "codex/workflow-scaffolding",
+    "created_utc":  "2026-06-28T18:45:32.0864342Z",
+    "subject":  {
+                    "git_head":  "7d3a77350a73dba076bd4bae35603d44e196a08a",
+                    "git_tree":  "9e628a0b70624f9c5202608aa50e1e8769565791",
+                    "content_digest_algorithm":  "sha256:repo-tracked-files-v1",
+                    "content_digest":  "cda72ab9fbc8cd76ad57196403f8469bcb1a8edea74ea42fbd1787bb73d91e00",
+                    "tracked_file_count":  22,
+                    "excluded_prefixes":  [
+                                              "docs/proofs/"
+                                          ]
+                },
+    "validation":  {
+                       "schema_version":  1,
+                       "result":  "passed",
+                       "started_utc":  "2026-06-28T18:45:31.9761748Z",
+                       "completed_utc":  "2026-06-28T18:45:32.0663822Z",
+                       "repository":  "C:\\Users\\jdipa\\Documents\\Github\\Extinction-Engine",
+                       "steps":  [
+                                     {
+                                         "name":  "git diff whitespace check",
+                                         "command":  "git diff --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T18:45:31.9796838Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0032612Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "git staged diff whitespace check",
+                                         "command":  "git diff --cached --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T18:45:32.0042630Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0278084Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "remediation record validation",
+                                         "command":  "./scripts/Verify-RemediationRecords.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-28T18:45:32.0283082Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0628781Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust format check",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T18:45:32.0643823Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0643823Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust clippy",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T18:45:32.0648826Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0648826Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust tests",
+                                         "command":  "",
+                                         "status":  "skipped",
+                                         "exit_code":  null,
+                                         "started_utc":  "2026-06-28T18:45:32.0648826Z",
+                                         "completed_utc":  "2026-06-28T18:45:32.0648826Z",
+                                         "summary":  "server-rust/Cargo.toml does not exist yet.",
+                                         "output":  [
+
+                                                    ]
+                                     }
+                                 ]
+                   }
+}
