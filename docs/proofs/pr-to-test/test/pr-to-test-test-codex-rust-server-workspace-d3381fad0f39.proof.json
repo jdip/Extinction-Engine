@@ -1,0 +1,207 @@
+{
+    "schema_version":  1,
+    "proof_id":  "pr-to-test-test-codex-rust-server-workspace-d3381fad0f39",
+    "proof_kind":  "pr-to-test",
+    "target_branch":  "test",
+    "source_branch":  "codex/rust-server-workspace",
+    "created_utc":  "2026-06-29T01:40:08.8305060Z",
+    "subject":  {
+                    "git_head":  "d3381fad0f39aa6370388ff57f4f651f2e6bf130",
+                    "git_tree":  "5839e442b30ccea54dc1a031d1475aae22464e64",
+                    "content_digest_algorithm":  "sha256:git-index-manifest-v1",
+                    "content_digest":  "92285b2cb68018f08bd0b5e1beb4257eac7d1579f24432c1933b8fca8d971019",
+                    "tracked_file_count":  76,
+                    "excluded_prefixes":  [
+                                              "docs/proofs/"
+                                          ]
+                },
+    "validation":  {
+                       "schema_version":  1,
+                       "result":  "passed",
+                       "validation_profile":  "full",
+                       "full_validation_skip_reason":  "",
+                       "started_utc":  "2026-06-29T01:40:07.8223780Z",
+                       "completed_utc":  "2026-06-29T01:40:08.8044345Z",
+                       "environment":  {
+                                           "repository_root":  ".",
+                                           "repository_root_kind":  "current-checkout",
+                                           "shell":  "powershell",
+                                           "powershell_version":  "5.1.26100.8655",
+                                           "os":  "Microsoft Windows 10.0.26200 "
+                                       },
+                       "steps":  [
+                                     {
+                                         "name":  "git diff whitespace check",
+                                         "command":  "git diff --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:07.8273899Z",
+                                         "completed_utc":  "2026-06-29T01:40:07.8554257Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "git staged diff whitespace check",
+                                         "command":  "git diff --cached --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:07.8569318Z",
+                                         "completed_utc":  "2026-06-29T01:40:07.8854845Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "remediation record validation",
+                                         "command":  "./scripts/Verify-RemediationRecords.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:07.8859839Z",
+                                         "completed_utc":  "2026-06-29T01:40:07.9380783Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "durable spec validation",
+                                         "command":  "./scripts/Verify-Specs.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:07.9385785Z",
+                                         "completed_utc":  "2026-06-29T01:40:08.0106940Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "retrospective validation",
+                                         "command":  "./scripts/Verify-Retrospectives.ps1",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:08.0106940Z",
+                                         "completed_utc":  "2026-06-29T01:40:08.0833364Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust format check",
+                                         "command":  "cargo fmt --all --check",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:08.0838367Z",
+                                         "completed_utc":  "2026-06-29T01:40:08.2982263Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust clippy",
+                                         "command":  "cargo clippy --workspace --all-targets -- -D warnings",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:08.2987252Z",
+                                         "completed_utc":  "2026-06-29T01:40:08.4822961Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+                                                        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s"
+                                                    ]
+                                     },
+                                     {
+                                         "name":  "rust tests",
+                                         "command":  "cargo test --workspace",
+                                         "status":  "passed",
+                                         "exit_code":  0,
+                                         "started_utc":  "2026-06-29T01:40:08.4842948Z",
+                                         "completed_utc":  "2026-06-29T01:40:08.8024351Z",
+                                         "summary":  "Passed",
+                                         "output":  [
+                                                        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s",
+                                                        "     Running unittests src\\lib.rs (target\\debug\\deps\\dino_persistence-6f6f9f7d627e2888.exe)",
+                                                        "",
+                                                        "running 1 test",
+                                                        "test tests::metadata_preserves_save_version_seed_tick_and_hash ... ok",
+                                                        "",
+                                                        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "     Running unittests src\\lib.rs (target\\debug\\deps\\dino_protocol-94d70031c0f3dd7c.exe)",
+                                                        "",
+                                                        "running 4 tests",
+                                                        "test tests::commands_default_to_current_protocol_version ... ok",
+                                                        "test tests::snapshots_carry_current_protocol_version ... ok",
+                                                        "test tests::parses_join_and_move_client_lines ... ok",
+                                                        "test tests::encodes_and_parses_authoritative_state_lines ... ok",
+                                                        "",
+                                                        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "     Running unittests src\\lib.rs (target\\debug\\deps\\dino_server-2e27cc6361573bdf.exe)",
+                                                        "",
+                                                        "running 1 test",
+                                                        "test tests::queue_leave_commands_enqueues_all_owned_players ... ok",
+                                                        "",
+                                                        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "     Running unittests src\\main.rs (target\\debug\\deps\\dino_server-cdf14b4ef55a6291.exe)",
+                                                        "",
+                                                        "running 0 tests",
+                                                        "",
+                                                        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "     Running unittests src\\lib.rs (target\\debug\\deps\\dino_sim-878fd29d1db68d92.exe)",
+                                                        "",
+                                                        "running 7 tests",
+                                                        "test tests::avatar_collision_blocks_overlap_and_allows_slow_push ... ok",
+                                                        "test tests::joined_avatar_moves_with_clamped_axes ... ok",
+                                                        "test tests::leaving_player_removes_avatar ... ok",
+                                                        "test tests::different_commands_produce_different_state_hash ... ok",
+                                                        "test tests::tick_count_advances_predictably ... ok",
+                                                        "test tests::repeated_movement_commands_apply_latest_intent_once_per_tick ... ok",
+                                                        "test tests::same_seed_and_commands_produce_same_state_hash ... ok",
+                                                        "",
+                                                        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "     Running unittests src\\main.rs (target\\debug\\deps\\dino_tools-82b0fd74cd05794f.exe)",
+                                                        "",
+                                                        "running 3 tests",
+                                                        "test tests::axis_yaw_matches_world_axes ... ok",
+                                                        "test tests::circle_axis_offsets_each_player_phase ... ok",
+                                                        "test tests::circle_axis_cycles_through_octants ... ok",
+                                                        "",
+                                                        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "   Doc-tests dino_persistence",
+                                                        "",
+                                                        "running 0 tests",
+                                                        "",
+                                                        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "   Doc-tests dino_protocol",
+                                                        "",
+                                                        "running 0 tests",
+                                                        "",
+                                                        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "   Doc-tests dino_server",
+                                                        "",
+                                                        "running 0 tests",
+                                                        "",
+                                                        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        "",
+                                                        "   Doc-tests dino_sim",
+                                                        "",
+                                                        "running 0 tests",
+                                                        "",
+                                                        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+                                                        ""
+                                                    ]
+                                     }
+                                 ]
+                   }
+}
