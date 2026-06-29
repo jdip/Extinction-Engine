@@ -1,0 +1,16 @@
+[package]
+name = "dino_server"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+dino_persistence = { path = "../dino_persistence" }
+dino_protocol = { path = "../dino_protocol" }
+dino_sim = { path = "../dino_sim" }
+
+[lints]
+workspace = true
+

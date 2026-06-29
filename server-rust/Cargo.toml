@@ -1,0 +1,20 @@
+[workspace]
+members = [
+    "crates/dino_persistence",
+    "crates/dino_protocol",
+    "crates/dino_server",
+    "crates/dino_sim",
+    "crates/dino_tools",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "UNLICENSED"
+repository = "https://github.com/jdip/Extinction-Engine"
+rust-version = "1.87"
+version = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+

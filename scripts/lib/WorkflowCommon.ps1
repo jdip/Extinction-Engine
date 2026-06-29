@@ -938,8 +938,10 @@ function Invoke-ValidationCommand {
     $started = Get-UtcIsoTimestamp
     $output = @()
     $exitCode = 0
+    $previousErrorActionPreference = $ErrorActionPreference
 
     try {
+        $ErrorActionPreference = "Continue"
         $global:LASTEXITCODE = 0
         $output = & $Script 2>&1
         if ($LASTEXITCODE -is [int]) {
@@ -952,6 +954,9 @@ function Invoke-ValidationCommand {
     catch {
         $exitCode = 1
         $output = @($_.Exception.Message)
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 
     $completed = Get-UtcIsoTimestamp
