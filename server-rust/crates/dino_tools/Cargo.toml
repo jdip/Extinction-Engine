@@ -1,0 +1,15 @@
+[package]
+name = "dino_tools"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+dino_protocol = { path = "../dino_protocol" }
+dino_sim = { path = "../dino_sim" }
+
+[lints]
+workspace = true
+
